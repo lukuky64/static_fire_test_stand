@@ -1,19 +1,24 @@
 #include <Arduino.h>
+#include "esp_log.h"
+#include "State_Machine.hpp"
 
-#include "Devices.hpp"
+// #include "Devices.hpp"
 
-Devices devices;
+// Devices devices;
+
+State_Machine stateMachine;
 
 void setup()
 {
-    Serial.begin(115200);
-    delay(100);
-    devices.begin();
+    stateMachine.begin(); // Start the state machine
 
-    Serial.println("Setup complete!");
+    // delay(100);
+    // devices.begin();
+
+    // Serial.println("Setup complete!");
 }
 
 void loop()
 {
-    delay(100);
+    vTaskDelay(portMAX_DELAY);
 }

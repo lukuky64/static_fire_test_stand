@@ -15,6 +15,8 @@
 
 #include "Devices.hpp"
 
+#include "Params.hpp"
+
 #include "TimerGuard.hpp"
 #include "Threading.hpp"
 #include "SemaphoreGuard.hpp"
@@ -40,20 +42,17 @@ public:
 
     // void cpuUsageMonitorSeq();
 
-    void printCpuUsage();
-
     void initialisationSeq();
     void calibrationSeq();
-    void controlSeq();
     void lightSleepSeq();
     void idleSeq();
     // void checkActivityTask();
     STATES getCurrentState();
+    void setCurrentState(STATES state);
     void criticalErrorSeq();
     void indicationSeq();
 
     void logSeq();
-    void wifiSeq();
     const char *stateToString(STATES state);
 
     // FreeRTOS Tasks
@@ -61,12 +60,7 @@ public:
     static void indicationTask(void *pvParameters);
     static void refreshStatusTask(void *pvParameters);
     static void updateFiltersTask(void *pvParameters);
-    static void balanceTask(void *pvParameters);
-    static void BLDCTask(void *pvParameters);
     static void logTask(void *pvParameters);
-    static void ControlabilityTask(void *pvParameters);
-    static void checkControllableTask(void *pvParameters);
-    static void wifiTask(void *pvParameters);
 
 private:
     SemaphoreHandle_t m_stateMutex = NULL;
@@ -76,7 +70,6 @@ private:
 
     STATES m_currState;
     Devices m_devices;
-    Controller m_control;
 
     // FreeRTOS Handles
     TaskHandle_t m_taskManagerTaskHandle = NULL;
