@@ -253,7 +253,7 @@ void State_Machine::calibrationSeq()
 
     if (succ)
     {
-        // m_devices.m_indicators.showSuccess(); // !!! remove comment
+        m_devices.m_indicators.showSuccess();
     }
 }
 

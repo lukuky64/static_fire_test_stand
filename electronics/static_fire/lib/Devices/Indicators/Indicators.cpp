@@ -1,62 +1,35 @@
-#include "INDICATORS.hpp"
+#include "Indicators.hpp"
 
 Indicators::Indicators()
 {
-    statusMutex = xSemaphoreCreateMutex(); // Create the status mutex
+    m_ledMutex = nullptr; // Initialize the mutex to nullptr
 }
 
 Indicators::~Indicators()
 {
-    // Disable the buzzer and RGB LED
-
-    m_buzzerEnabled = false;
-    m_RGBLedEnabled = false;
-
-    // Delete the mutexes
-    vSemaphoreDelete(buzzerMutex);
-    vSemaphoreDelete(rgbLedMutex);
-    vSemaphoreDelete(statusMutex);
+    if (m_ledMutex != nullptr)
+    {
+        vSemaphoreDelete(m_ledMutex);
+    }
 }
 
 /*****************************************************************************/
 /*!
-    @brief  Setup the buzzer and create the buzzer mutex. Play a quick chirp
+    @brief Setup the  LED and create the LED mutex. Flash the LED
     to indicate success.
 
-    @param  BuzzerPin The GPIO pin to be used for the buzzer
+    @param ledPin The GPIO pin to be used for the LED.
 */
 /*****************************************************************************/
-void Indicators::setupBuzzer(uint8_t buzzerPin)
+void Indicators::setup(uint8_t ledPin)
 {
-    m_buzzerPin = buzzerPin;
-    m_buzzerEnabled = true;
-    pinMode(m_buzzerPin, OUTPUT);
+    m_ledPin = ledPin;
+    pinMode(m_ledPin, OUTPUT);
 
-    buzzerMutex = xSemaphoreCreateMutex(); // Create buzzer mutex
-
-    // quick chirp
-    controlBuzzer(tones[6].frequency, 50);
-}
-
-/*****************************************************************************/
-/*!
-    @brief Setup the RGB LED and create the RGB LED mutex. Flash the LED
-    to indicate success.
-
-    @param ledNeo The GPIO pin to be used for the RGB LED. Assuming the
-    LED is an addressable LED (e.g. WS2812B).
-*/
-/*****************************************************************************/
-void Indicators::setupRGBLed(uint8_t ledNeo)
-{
-    m_ledNeo = ledNeo;
-    m_RGBLedEnabled = true;
-    pinMode(m_ledNeo, OUTPUT);
-
-    rgbLedMutex = xSemaphoreCreateMutex(); // Create the RGB LED mutex
+    m_ledMutex = xSemaphoreCreateMutex(); // Create the RGB LED mutex
 
     // quick test
-    controlRGBLed(colours[1].value, 50); // Green
+    controlLed(50);
 }
 
 /*****************************************************************************/
@@ -72,9 +45,8 @@ void Indicators::showCriticalError()
 
     for (int i = 0; i < 3; i++)
     {
-        controlBuzzer(tones[0].frequency, duration);
-        controlRGBLed(colours[0].value, duration); // Red
-        vTaskDelay(pdMS_TO_TICKS(duration));       // off period
+        controlLed(duration);                // Red
+        vTaskDelay(pdMS_TO_TICKS(duration)); // off period
     }
 }
 
@@ -91,9 +63,8 @@ void Indicators::showWarning()
 
     for (int i = 0; i < 2; i++)
     {
-        // controlBuzzer(tones[3].frequency, duration);
-        controlRGBLed(colours[7].value, duration); // Orange
-        vTaskDelay(pdMS_TO_TICKS(duration));       // off period
+        controlLed(duration);                // Orange
+        vTaskDelay(pdMS_TO_TICKS(duration)); // off period
     }
 }
 
@@ -111,8 +82,7 @@ void Indicators::showSuccess()
 
     for (int i = 0; i < 3; i++)
     {
-        controlBuzzer(tones[i].frequency, duration);
-        controlRGBLed(colours[1].value, duration); // Green
+        controlLed(duration); // Green
         vTaskDelay(pdMS_TO_TICKS(duration));
     }
 }
@@ -128,7 +98,7 @@ void Indicators::showAllGood()
 
     uint16_t duration = 50; // ms
 
-    controlRGBLed(colours[1].value, duration);
+    controlLed(duration);
 }
 
 /*****************************************************************************/
@@ -140,36 +110,7 @@ void Indicators::showAllOff()
 {
     ESP_LOGI(TAG, "Turning off all Indicators!");
 
-    controlRGBLed(0, 0);
-    controlBuzzer(300, 50);
-}
-
-/*****************************************************************************/
-/*!
-    @brief Control the buzzer. This will play a tone at a given frequency
-    for a given duration.
-
-    @param frequency The frequency of the tone to be played (Hz)
-
-    @param duration The duration of the tone to be played (ms)
-
-    @return True if the buzzer was setup successfully, false otherwise.
-*/
-/*****************************************************************************/
-bool Indicators::controlBuzzer(int frequency, int duration)
-{
-    if (m_buzzerEnabled)
-    {
-        SemaphoreGuard guard(buzzerMutex);
-        if (guard.acquired())
-        {
-            tone(m_buzzerPin, frequency);
-            vTaskDelay(pdMS_TO_TICKS(duration));
-            noTone(m_buzzerPin);
-            return true;
-        }
-    }
-    return false;
+    controlLed(0);
 }
 
 /*****************************************************************************/
@@ -184,77 +125,16 @@ bool Indicators::controlBuzzer(int frequency, int duration)
     @return True if the RGB LED was setup successfully, false otherwise.
 */
 /*****************************************************************************/
-bool Indicators::controlRGBLed(int hexValue, int duration)
+bool Indicators::controlLed(int duration)
 {
-    if (m_RGBLedEnabled)
-    {
-
-        SemaphoreGuard guard(rgbLedMutex);
-        if (guard.acquired())
-        {
-            uint8_t red = (hexValue >> 16) & 0xFF;
-            uint8_t green = (hexValue >> 8) & 0xFF;
-            uint8_t blue = hexValue & 0xFF;
-
-            neopixelWrite(m_ledNeo, red, green, blue); // Red
-
-            vTaskDelay(pdMS_TO_TICKS(duration));
-
-            neopixelWrite(m_ledNeo, 0, 0, 0); // Red
-
-            return true;
-        }
-    }
-    return false;
-}
-
-/*****************************************************************************/
-/*!
-    @brief Check the status of the indicators.
-
-    @return True if the buzzer or RGB LED is enabled, false otherwise.
-*/
-/*****************************************************************************/
-bool Indicators::checkStatus()
-{
-    SemaphoreGuard guard(statusMutex);
+    SemaphoreGuard guard(m_ledMutex);
     if (guard.acquired())
     {
-        return m_buzzerEnabled || m_RGBLedEnabled;
-    }
-    return false;
-}
+        digitalWrite(m_ledPin, HIGH);
+        vTaskDelay(pdMS_TO_TICKS(duration));
+        digitalWrite(m_ledPin, LOW);
 
-/*****************************************************************************/
-/*!
-    @brief Check the status of the buzzer.
-
-    @return True if the buzzer is enabled, false otherwise.
-*/
-/*****************************************************************************/
-bool Indicators::checkStatusBuzzer()
-{
-    SemaphoreGuard guard(statusMutex);
-    if (guard.acquired())
-    {
-        return m_buzzerEnabled;
-    }
-    return false;
-}
-
-/*****************************************************************************/
-/*!
-    @brief Check the status of the RGB LED.
-
-    @return True if the RGB LED is enabled, false otherwise.
-*/
-/*****************************************************************************/
-bool Indicators::checkStatusLed()
-{
-    SemaphoreGuard guard(statusMutex);
-    if (guard.acquired())
-    {
-        return m_RGBLedEnabled;
+        return true;
     }
     return false;
 }

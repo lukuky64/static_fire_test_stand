@@ -1,9 +1,9 @@
-#include "template.hpp"
+#include "Template.hpp"
 
-NAME::NAME()
+Template::Template()
 {
 }
 
-NAME::~NAME()
+Template::~Template()
 {
 }

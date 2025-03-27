@@ -2,11 +2,11 @@
 
 #include "Arduino.h"
 
-class NAME
+class Template
 {
 public:
-    NAME();
-    ~NAME();
+    Template();
+    ~Template();
 
 private:
 };

@@ -5,7 +5,11 @@
 #include <SPI.h>
 
 // #include "Log/Log.hpp"
-// #include "Indicators/Indicators.hpp"
+#include "Indicators/Indicators.hpp"
+
+#include "BMS/BMS.hpp"
+
+#include "Igniter/Igniter.hpp"
 
 #include "Pin_Defs.hpp"
 
@@ -29,9 +33,11 @@ public:
 
 public:
     // Log m_logger;
-    // Indicators m_indicators;
+    Indicators m_indicators;
+    User_Interface UI;
+    BMS m_bms;
+    Igniter m_igniter;
 
 private:
     TwoWire I2C_BUS;
-    User_Interface UI;
 };
