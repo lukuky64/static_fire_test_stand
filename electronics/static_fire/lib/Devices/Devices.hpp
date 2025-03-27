@@ -15,13 +15,15 @@
 
 #include "User_Interface.hpp"
 
+#include "LoadCell/LoadCell.hpp"
+
 class Devices
 {
 public:
     Devices();
     ~Devices();
 
-    bool begin();
+    bool begin(unsigned int logSD, unsigned int logSerial);
     bool indicateStatus();
     void refreshStatusAll();
     bool sleepMode();
@@ -29,14 +31,13 @@ public:
 
     bool calibrateSeq();
 
-    bool init(unsigned int LOG_SD, unsigned int LOG_SERIAL);
-
 public:
     // Log m_logger;
     Indicators m_indicators;
     User_Interface UI;
     BMS m_bms;
     Igniter m_igniter;
+    LoadCell m_LoadCell;
 
 private:
     TwoWire I2C_BUS;

@@ -20,6 +20,9 @@ public:
 
     void drawBitMap();
 
+    void showSuccess(String msg);
+    void showError(String msg);
+
 private:
     const int SCREEN_WIDTH = 128; // OLED display width, in pixels
     const int SCREEN_HEIGHT = 64; // OLED display height, in pixels

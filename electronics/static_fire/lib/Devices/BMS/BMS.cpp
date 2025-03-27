@@ -23,11 +23,21 @@ void BMS::init(uint8_t voltagePin)
 
 void BMS::update()
 {
-    float newReading = analogReadMilliVolts(m_voltageSensePin) / 1000; // !!! test this
-    ESP_LOGI(TAG, "New voltage reading: %f", newReading);
+    uint16_t numReadings = 20;
 
-    m_currentVoltage = newReading * (1 - m_alpha) + (m_currentVoltage * m_alpha);
-    m_curentCapacity = m_battery.max_capacity * m_currentVoltage / m_battery.max_voltage;
+    for (int i = 0; i < numReadings; i++)
+    {
+        float newReading = analogReadMilliVolts(m_voltageSensePin) / 1000; // !!! test this
+
+        newReading = newReading * 1.67; // scaling from voltage divider, !!! have to test this
+        m_currentVoltage = newReading * (1 - m_alpha) + (m_currentVoltage * m_alpha);
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+    m_curentCapacity = constrain((m_battery.max_capacity * (1 / (m_battery.max_voltage - m_battery.min_voltage)) * (m_currentVoltage - m_battery.min_voltage)), 0, m_battery.max_capacity);
+
+    ESP_LOGI(TAG, "Current voltage: %f V", m_currentVoltage);
+    ESP_LOGI(TAG, "Current capacity: %f mAh", m_curentCapacity);
 }
 
 float BMS::getVoltage()

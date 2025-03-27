@@ -7,6 +7,7 @@ class BMS
 
     struct Battery
     {
+        float min_voltage;  // volts
         float max_voltage;  // volts
         float max_capacity; // mAh
     };
@@ -28,7 +29,7 @@ private:
     float m_currentVoltage;
     float m_curentCapacity;
 
-    Battery m_battery{4.2, 2200}; // try find an actual 18650 battery datasheet
+    Battery m_battery{2.5, 4.2, 2200}; // try find an actual 18650 battery datasheet
 
     float m_alpha; // complementary filter coefficient
 

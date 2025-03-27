@@ -61,7 +61,7 @@ void State_Machine::loop()
     {
         // !!! commenting out so i can just look at initialisaiton for now
 
-        // calibrationSeq();
+        calibrationSeq();
         // logSeq(); // initial logging start
     }
     break;
@@ -174,7 +174,7 @@ void State_Machine::criticalErrorSeq()
     vTaskDelete(m_refreshStatusTaskHandle);
     m_refreshStatusTaskHandle = NULL; // clear the handle
 
-    vTaskDelay(pdMS_TO_TICKS(5000)); // wait for 5 seconds before restarting the initialisation sequence
+    vTaskDelay(pdMS_TO_TICKS(2000)); // wait for 2 seconds before restarting the initialisation sequence
 
     // destroy task
     vTaskDelete(m_indicationLoopTaskHandle);
@@ -214,9 +214,7 @@ void State_Machine::lightSleepSeq()
 
 void State_Machine::initialisationSeq()
 {
-    // STATES currState = m_devices.init(Params::LOG_SD, Params::LOG_SERIAL) ? CALIBRATION : CRITICAL_ERROR;
-
-    STATES currState = m_devices.begin() ? CALIBRATION : CRITICAL_ERROR;
+    STATES currState = m_devices.begin(Params::LOG_SD, Params::LOG_SERIAL) ? CALIBRATION : CRITICAL_ERROR;
 
     setCurrentState(currState);
 
@@ -226,14 +224,14 @@ void State_Machine::initialisationSeq()
 void State_Machine::indicationSeq()
 {
 
-    // if (m_indicationLoopTaskHandle == NULL)
-    // {
-    //     xTaskCreate(&State_Machine::indicationTask, "Indication Loop Task", 2048, this, PRIORITY_LOW, &m_indicationLoopTaskHandle); // uses 1836 bytes of stack
-    // }
-    // if (m_refreshStatusTaskHandle == NULL)
-    // {
-    //     xTaskCreate(&State_Machine::refreshStatusTask, "Device status check loop Task", 2048, this, PRIORITY_LOW, &m_refreshStatusTaskHandle);
-    // }
+    if (m_indicationLoopTaskHandle == NULL)
+    {
+        xTaskCreate(&State_Machine::indicationTask, "Indication Loop Task", 2048, this, PRIORITY_LOW, &m_indicationLoopTaskHandle); // uses 1836 bytes of stack
+    }
+    if (m_refreshStatusTaskHandle == NULL)
+    {
+        xTaskCreate(&State_Machine::refreshStatusTask, "Device status check loop Task", 2048, this, PRIORITY_LOW, &m_refreshStatusTaskHandle);
+    }
 }
 
 void State_Machine::calibrationSeq()
@@ -254,6 +252,7 @@ void State_Machine::calibrationSeq()
     if (succ)
     {
         m_devices.m_indicators.showSuccess();
+        m_devices.UI.showSuccess("Calibration");
     }
 }
 

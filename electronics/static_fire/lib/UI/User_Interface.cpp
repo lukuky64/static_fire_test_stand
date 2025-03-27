@@ -55,3 +55,34 @@ void User_Interface::drawBitMap()
     }
     delay(1000);
 }
+
+void User_Interface::showSuccess(String msg)
+{
+    display.clearDisplay();
+
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+
+    display.println(msg + " Success!");
+
+    display.display();
+    delay(500);
+    display.clearDisplay();
+    display.display();
+}
+
+void User_Interface::showError(String msg)
+{
+    display.clearDisplay();
+
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println(msg + " Error!");
+
+    display.display();
+    delay(500);
+    display.clearDisplay();
+    display.display();
+}
