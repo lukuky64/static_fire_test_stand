@@ -21,10 +21,11 @@ public:
     bool isInitialized() { return true; }
     String createUniqueLogFile(String prefix) { return "true"; }
     bool createNestedDirectories(String prefix) { return true; }
+    bool checkPresence() { return true; }
 
 #else
     bool checkStatus();
-    bool begin(uint8_t CS, SPIClass &SPI_BUS);
+    bool begin(uint8_t cardDetect, uint8_t CS, SPIClass &SPI_BUS);
 
     bool createFile(String StartMsg, String prefix);
 
@@ -33,6 +34,7 @@ public:
 
     String createUniqueLogFile(String prefix);
     bool createNestedDirectories(String prefix);
+    bool checkPresence();
 
 private:
     File dataFile;
@@ -40,6 +42,8 @@ private:
     bool isFileOpen;
     String buffer;
     bool initialised;
+
+    uint8_t m_cardDetectPin;
 
     SPIClass *m_SPI_BUS = nullptr;
     uint8_t m_CS;

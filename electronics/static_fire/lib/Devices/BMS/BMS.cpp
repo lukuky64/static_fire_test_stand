@@ -13,17 +13,18 @@ BMS::~BMS()
     //
 }
 
-void BMS::init(uint8_t voltagePin)
+bool BMS::init(uint8_t voltagePin)
 {
     m_voltageSensePin = voltagePin;
     pinMode(m_voltageSensePin, INPUT);
     // analogSetAttenuation(ADC_11db); // 150 mV ~ 2450 mV, attenuation is 11dB by default so won't need this line
     update();
+    return getPercentage();
 }
 
 void BMS::update()
 {
-    uint16_t numReadings = 20;
+    uint16_t numReadings = 10;
 
     for (int i = 0; i < numReadings; i++)
     {

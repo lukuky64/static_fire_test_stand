@@ -59,7 +59,7 @@ public:
     static void taskManagerTask(void *pvParameters);
     static void indicationTask(void *pvParameters);
     static void refreshStatusTask(void *pvParameters);
-    static void updateFiltersTask(void *pvParameters);
+    static void updateDataTask(void *pvParameters);
     static void logTask(void *pvParameters);
 
 private:
@@ -76,7 +76,7 @@ private:
     TaskHandle_t m_indicationLoopTaskHandle = NULL;
     TaskHandle_t m_refreshStatusTaskHandle = NULL;
 
-    TaskHandle_t m_updateFiltersTaskHandle = NULL;
+    TaskHandle_t m_updateDataTaskHandle = NULL;
     TaskHandle_t m_balanceTaskHandle = NULL;
     TaskHandle_t m_BLDCTaskHandle = NULL;
 

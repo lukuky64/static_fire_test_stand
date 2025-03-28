@@ -87,7 +87,7 @@ void State_Machine::loop()
     }
 }
 
-void State_Machine::updateFiltersTask(void *pvParameters)
+void State_Machine::updateDataTask(void *pvParameters)
 {
     vTaskDelay(pdMS_TO_TICKS(50));
     // Convert generic pointer back to State_Machine*
@@ -95,8 +95,7 @@ void State_Machine::updateFiltersTask(void *pvParameters)
 
     while (true)
     {
-        {
-        }
+        machine->m_devices.aquireData();
         vTaskDelay(pdMS_TO_TICKS(Params::AQUISITION_MS));
     }
 }
@@ -109,7 +108,7 @@ void State_Machine::indicationTask(void *pvParameters)
 
     while (true)
     {
-        bool requirementsMet = machine->m_devices.indicateStatus();
+        bool requirementsMet = machine->m_devices.checkStatus();
 
         if (!requirementsMet)
         {
@@ -117,19 +116,6 @@ void State_Machine::indicationTask(void *pvParameters)
         }
 
         vTaskDelay(pdMS_TO_TICKS(Params::INDICATION_MS));
-    }
-}
-
-void State_Machine::refreshStatusTask(void *pvParameters)
-{
-    vTaskDelay(pdMS_TO_TICKS(50));
-    // Convert generic pointer back to State_Machine*
-    auto *machine = static_cast<State_Machine *>(pvParameters);
-
-    while (true)
-    {
-        vTaskDelay(pdMS_TO_TICKS(Params::REFRESH_STATUS_MS)); // delay first to create initial offset
-        machine->m_devices.refreshStatusAll();
     }
 }
 
@@ -170,9 +156,7 @@ void State_Machine::criticalErrorSeq()
 {
     ESP_LOGE("State_Machine CRITICAL ERROR", "Critical Error Sequence!");
 
-    // destroy task
-    vTaskDelete(m_refreshStatusTaskHandle);
-    m_refreshStatusTaskHandle = NULL; // clear the handle
+    // m_devices.UI.showError("Critical Error");
 
     vTaskDelay(pdMS_TO_TICKS(2000)); // wait for 2 seconds before restarting the initialisation sequence
 
@@ -214,7 +198,7 @@ void State_Machine::lightSleepSeq()
 
 void State_Machine::initialisationSeq()
 {
-    STATES currState = m_devices.begin(Params::LOG_SD, Params::LOG_SERIAL) ? CALIBRATION : CRITICAL_ERROR;
+    STATES currState = m_devices.begin() ? CALIBRATION : CRITICAL_ERROR;
 
     setCurrentState(currState);
 
@@ -228,10 +212,6 @@ void State_Machine::indicationSeq()
     {
         xTaskCreate(&State_Machine::indicationTask, "Indication Loop Task", 2048, this, PRIORITY_LOW, &m_indicationLoopTaskHandle); // uses 1836 bytes of stack
     }
-    if (m_refreshStatusTaskHandle == NULL)
-    {
-        xTaskCreate(&State_Machine::refreshStatusTask, "Device status check loop Task", 2048, this, PRIORITY_LOW, &m_refreshStatusTaskHandle);
-    }
 }
 
 void State_Machine::calibrationSeq()
@@ -240,20 +220,20 @@ void State_Machine::calibrationSeq()
 
     ESP_LOGI("State_Machine CALIBRATION", "Calibration Sequence!");
 
-    bool succ = m_devices.calibrateSeq();
+    bool succ = m_devices.calibrate();
 
-    if ((m_updateFiltersTaskHandle == NULL) && succ)
+    if ((m_updateDataTaskHandle == NULL) && succ)
     {
-        xTaskCreate(&State_Machine::updateFiltersTask, "Starting Filters Task", 4096, this, PRIORITY_HIGH, &m_updateFiltersTaskHandle);
+        xTaskCreate(&State_Machine::updateDataTask, "Starting Filters Task", 4096, this, PRIORITY_HIGH, &m_updateDataTaskHandle);
     }
-
-    setCurrentState((succ) ? IDLE : CRITICAL_ERROR);
 
     if (succ)
     {
         m_devices.m_indicators.showSuccess();
-        m_devices.UI.showSuccess("Calibration");
+        // m_devices.UI.showSuccess("Calibration");
     }
+
+    setCurrentState((succ) ? IDLE : CRITICAL_ERROR);
 }
 
 void State_Machine::logSeq()

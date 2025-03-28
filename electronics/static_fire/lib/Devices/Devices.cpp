@@ -8,23 +8,40 @@ Devices::~Devices()
 {
 }
 
-bool Devices::begin(unsigned int logSD, unsigned int logSerial)
+bool Devices::begin()
 {
     // begin all coms and devices
     I2C_BUS.begin(I2C_SDA, I2C_SCL, 400000);
+    SPI_SD_BUS.begin(SPI_CLK_SD, SPI_MISO_SD, SPI_MOSI_SD);
 
     m_indicators.setup(INDICATOR_LED);
     UI.init(I2C_BUS);
     UI.begin();
-    m_bms.init(VOLTAGE_SENSE);
     m_igniter.init(IGNITER_CONTROL, IGNITER_SENSE, IGNITER_ARMED);
 
-    return true;
+    if (Params::LOG_SD == 1)
+    {
+        m_logger.selectLogSD(SPI_SD_BUS); // priority to SD
+    }
+    else if (Params::LOG_SERIAL == 1)
+    {
+        m_logger.selectLogSerial();
+    }
+
+    bool bmsStatus = m_bms.init(VOLTAGE_SENSE);
+
+    bool success = bmsStatus;
+
+    return success;
 }
 
-bool Devices::calibrateSeq()
+bool Devices::calibrate()
 {
-    return true;
+    bool loadCellCalibrated = m_LoadCell.calibrate();
+
+    bool somethingElse = true;
+
+    return loadCellCalibrated && somethingElse;
 }
 
 bool Devices::sleepMode()
@@ -36,9 +53,19 @@ void Devices::wakeMode()
     return;
 }
 
-bool Devices::indicateStatus()
+bool Devices::checkStatus()
 {
-    if ((m_LoadCell.isReady()) && (m_bms.getPercentage() > 25))
+    bool loadCellReady = m_LoadCell.isReady();
+    float bmsPercentage = m_bms.getPercentage();
+    bool sdCard = m_logger.m_sdTalker.checkPresence();
+    bool rf_connected = false;
+    bool systemArmed = m_igniter.sytemArmed();
+
+    bool allGood = loadCellReady && (bmsPercentage > 20);
+
+    UI.drawPageBar(loadCellReady, sdCard, rf_connected, systemArmed, allGood, bmsPercentage, false);
+
+    if (allGood)
     {
         m_indicators.showAllGood();
         return true;
@@ -46,12 +73,12 @@ bool Devices::indicateStatus()
     else
     {
         m_indicators.showWarning();
-        UI.showError("devices");
+        UI.showError("device status");
         return false;
     }
 }
 
-void Devices::refreshStatusAll()
+void Devices::aquireData()
 {
-    return;
+    // ESP_LOGI("Devices", "Aquiring Data!");
 }

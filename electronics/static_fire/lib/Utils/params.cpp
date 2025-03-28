@@ -10,7 +10,7 @@ namespace Params
         float INDICATION_FREQ = 5;
         float TASK_MANGR_FREQ = 5;
 
-        unsigned int LOG_SD = 0;
+        unsigned int LOG_SD = 1;
         unsigned int LOG_SERIAL = 0;
         unsigned int SILENT_INDICATION = 0;
 

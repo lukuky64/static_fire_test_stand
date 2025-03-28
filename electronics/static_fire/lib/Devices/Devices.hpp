@@ -4,12 +4,15 @@
 #include <Wire.h>
 #include <SPI.h>
 
-// #include "Log/Log.hpp"
+#include "Log/Log.hpp"
+
 #include "Indicators/Indicators.hpp"
 
 #include "BMS/BMS.hpp"
 
 #include "Igniter/Igniter.hpp"
+
+#include "./Params.hpp"
 
 #include "Pin_Defs.hpp"
 
@@ -23,13 +26,15 @@ public:
     Devices();
     ~Devices();
 
-    bool begin(unsigned int logSD, unsigned int logSerial);
-    bool indicateStatus();
+    bool begin();
+    bool checkStatus();
     void refreshStatusAll();
     bool sleepMode();
     void wakeMode();
 
-    bool calibrateSeq();
+    bool calibrate();
+
+    void aquireData();
 
 public:
     // Log m_logger;
@@ -38,7 +43,10 @@ public:
     BMS m_bms;
     Igniter m_igniter;
     LoadCell m_LoadCell;
+    Log m_logger;
 
 private:
     TwoWire I2C_BUS;
+    SPIClass SPI_SD_BUS;
+    SPIClass SPI_RF_BUS;
 };

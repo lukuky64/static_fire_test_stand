@@ -29,10 +29,14 @@ bool SD_Talker::checkStatus()
 {
     if (!initialised)
     {
+        ESP_LOGE("SD_Talker", "SD card not initialised.");
         return false;
     }
 
-    bool sdStatus = sdWait(50); // Check drive 0, wait up to 25 ms
+    // Check if SD card is connected
+    bool sdStatus = checkPresence(); // HIGH = not connected, LOW = connected
+
+    // bool sdStatus = sdWait(50); // Check drive 0, wait up to 25 ms. Won't need this if we have card detect pin, although this checks communication
 
     if (!sdStatus)
     {
@@ -44,6 +48,11 @@ bool SD_Talker::checkStatus()
         // ESP_LOGI("SD_Talker", "SD card connected. Type: %d", cardType);
         return true;
     }
+}
+
+bool SD_Talker::checkPresence()
+{
+    return !digitalRead(m_cardDetectPin);
 }
 
 // seems to be working
@@ -83,19 +92,27 @@ bool SD_Talker::sdWait(int timeout)
     return (response != 0x00); // A response other than 0xFF indicates the card replied. But seems 0x00 means it failed
 }
 
-bool SD_Talker::begin(uint8_t CS, SPIClass &SPI_BUS)
+bool SD_Talker::begin(uint8_t cardDetect, uint8_t CS, SPIClass &SPI_BUS)
 {
+    if (initialised)
+    {
+        return true;
+    }
+
+    initialised = false;
+
     m_SPI_BUS = &SPI_BUS;
     m_CS = CS;
 
-    // See if the card is present and can be initialized:
-    if (!SD.begin(m_CS, *m_SPI_BUS))
+    m_cardDetectPin = cardDetect;
+    pinMode(m_cardDetectPin, INPUT_PULLUP);
+    if (checkPresence())
     {
-        initialised = false;
-    }
-    else
-    {
-        initialised = true;
+        // See if the card is present and can be initialized:
+        if (SD.begin(m_CS, *m_SPI_BUS))
+        {
+            initialised = true;
+        }
     }
 
     return initialised;

@@ -3,6 +3,7 @@
 #include "Arduino.h"
 #include "esp_log.h"
 #include "Params.hpp"
+#include "pin_defs.hpp"
 
 #include "SD_Talker/SD_Talker.hpp"
 #include "Serial_Talker/Serial_Talker.hpp"
@@ -12,7 +13,7 @@ class Log
 public:
     Log();
     ~Log();
-    void selectLogSD();
+    bool selectLogSD(SPIClass &SPI_BUS);
     void selectLogSerial();
     // bool beginSerial();
     // bool beginSD();

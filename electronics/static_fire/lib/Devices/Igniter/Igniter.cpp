@@ -62,7 +62,6 @@ bool Igniter::sytemArmed()
 {
     if (digitalRead(m_igniterArmedPin) == LOW)
     {
-        ESP_LOGE(TAG, "System not armed!");
         return false;
     }
 

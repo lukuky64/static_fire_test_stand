@@ -16,7 +16,7 @@ public:
     BMS();
     ~BMS();
 
-    void init(uint8_t voltagePin);
+    bool init(uint8_t voltagePin);
     void update();
     float getVoltage();
     float getCapacity();

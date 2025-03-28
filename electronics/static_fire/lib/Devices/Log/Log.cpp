@@ -74,9 +74,17 @@ bool Log::startNewLog()
     @brief Sets the Log flag for logging to the SD card.
 */
 /*****************************************************************************/
-void Log::selectLogSD()
+bool Log::selectLogSD(SPIClass &SPI_BUS)
 {
-    m_sdLog = true;
+    if (!m_sdLog)
+    {
+        m_sdLog = true;
+        return m_sdTalker.begin(SD_CD, SPI_CS_SD, SPI_BUS);
+    }
+    else
+    {
+        return false;
+    }
 }
 
 /*****************************************************************************/
