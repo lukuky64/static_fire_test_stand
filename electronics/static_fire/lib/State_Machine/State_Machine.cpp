@@ -210,7 +210,7 @@ void State_Machine::indicationSeq()
 
     if (m_indicationLoopTaskHandle == NULL)
     {
-        xTaskCreate(&State_Machine::indicationTask, "Indication Loop Task", 2048, this, PRIORITY_LOW, &m_indicationLoopTaskHandle); // uses 1836 bytes of stack
+        xTaskCreate(&State_Machine::indicationTask, "Indication Loop Task", 8192, this, PRIORITY_LOW, &m_indicationLoopTaskHandle); // uses 1836 bytes of stack
     }
 }
 

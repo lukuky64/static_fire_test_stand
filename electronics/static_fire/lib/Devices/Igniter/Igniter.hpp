@@ -24,7 +24,7 @@ private:
 
     static constexpr const char *TAG = "Igniter";
 
-    String m_password = "YES";
+    const String m_password = "YES";
 
     float m_alpha = 0.5; // analog filter coefficient
 };

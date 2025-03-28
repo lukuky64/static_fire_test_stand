@@ -13,6 +13,16 @@
         "format": "cpp",
         "initializer_list": "cpp",
         "span": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "cstdint": "cpp",
+        "chrono": "cpp",
+        "charconv": "cpp",
+        "optional": "cpp",
+        "ratio": "cpp",
+        "system_error": "cpp",
+        "functional": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp"
     }
 }

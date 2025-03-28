@@ -11,7 +11,7 @@ SD_Talker::~SD_Talker()
 
 #else
 
-SD_Talker::SD_Talker() : isFileOpen(false), initialised(false)
+SD_Talker::SD_Talker() : fileOpen(false), initialised(false)
 {
 }
 
@@ -19,7 +19,7 @@ SD_Talker::~SD_Talker()
 {
     // Ensure the file is closed and buffer is flushed upon object destruction
     // flushBuffer();
-    if (isFileOpen)
+    if (fileOpen)
     {
         dataFile.close();
     }
@@ -34,7 +34,7 @@ bool SD_Talker::checkStatus()
     }
 
     // Check if SD card is connected
-    bool sdStatus = checkPresence(); // HIGH = not connected, LOW = connected
+    bool sdStatus = checkPresence();
 
     // bool sdStatus = sdWait(50); // Check drive 0, wait up to 25 ms. Won't need this if we have card detect pin, although this checks communication
 
@@ -52,7 +52,27 @@ bool SD_Talker::checkStatus()
 
 bool SD_Talker::checkPresence()
 {
-    return !digitalRead(m_cardDetectPin);
+    bool cardPresent = false;
+
+    if (!digitalRead(m_cardDetectPin))
+    {
+        vTaskDelay(pdMS_TO_TICKS(50)); // wait for 50ms to ensure the card is present
+        cardPresent = !digitalRead(m_cardDetectPin);
+    }
+    else
+    {
+        if (fileOpen)
+        {
+            dataFile.close();
+            fileOpen = false;
+        }
+    }
+    return cardPresent;
+}
+
+bool SD_Talker::checkFileOpen()
+{
+    return fileOpen;
 }
 
 // seems to be working
@@ -106,13 +126,11 @@ bool SD_Talker::begin(uint8_t cardDetect, uint8_t CS, SPIClass &SPI_BUS)
 
     m_cardDetectPin = cardDetect;
     pinMode(m_cardDetectPin, INPUT_PULLUP);
-    if (checkPresence())
+
+    // See if the card is present and can be initialized:
+    if (SD.begin(m_CS, *m_SPI_BUS))
     {
-        // See if the card is present and can be initialized:
-        if (SD.begin(m_CS, *m_SPI_BUS))
-        {
-            initialised = true;
-        }
+        initialised = true;
     }
 
     return initialised;
@@ -171,29 +189,42 @@ bool SD_Talker::createFile(String StartMsg, String prefix)
 {
     bool success = false;
 
-    if (!sdWait(50))
+    if (!fileOpen)
     {
-        return false;
-    }
-
-    // first lets make sure we have the correct folder
-    createNestedDirectories(prefix);
-
-    fileName = createUniqueLogFile(prefix);
-    {
-        dataFile = SD.open(fileName.c_str(), FILE_WRITE);
-        if (dataFile)
+        if (checkPresence())
         {
-            dataFile.println(StartMsg);
-            dataFile.flush();
+            bool began = begin(m_cardDetectPin, m_CS, *m_SPI_BUS); // re-initialise the SD card, incase it wasn't present before
 
-            ESP_LOGI("SD_Talker", "Created file: %s", fileName.c_str());
-            isFileOpen = true;
-            success = true;
+            if (!began)
+            {
+                return false;
+            }
         }
         else
         {
-            success = false;
+            return false;
+        }
+
+        // first lets make sure we have the correct folder
+        createNestedDirectories(prefix);
+
+        fileName = createUniqueLogFile(prefix);
+
+        {
+            dataFile = SD.open(fileName.c_str(), FILE_WRITE);
+            if (dataFile)
+            {
+                dataFile.println(StartMsg);
+                dataFile.flush();
+
+                ESP_LOGI(TAG, "Created file: %s", fileName.c_str());
+                fileOpen = true;
+                success = true;
+            }
+            else
+            {
+                success = false;
+            }
         }
     }
 
@@ -215,7 +246,7 @@ bool SD_Talker::createFile(String StartMsg, String prefix)
 
 bool SD_Talker::writeBuffer(const char *buffer, size_t bufferIndex)
 {
-    if (isFileOpen)
+    if (fileOpen)
     {
         size_t bytesWritten = dataFile.write((const uint8_t *)buffer, bufferIndex);
         dataFile.flush();
@@ -241,12 +272,17 @@ String SD_Talker::createUniqueLogFile(String prefix)
 {
     String uniqueFileName;
     uint32_t currentLogIndex = 0;
+    const uint32_t maxIterations = 1000;
 
     // Generate a unique file name
     do
     {
+        if (currentLogIndex >= maxIterations)
+        {
+            return "";
+        }
         uniqueFileName = String(prefix) + "_" + String(currentLogIndex++) + ".csv";
-    } while (SD.exists(uniqueFileName.c_str())); // Check if the file already exists}
+    } while (SD.exists(uniqueFileName.c_str())); // Check if the file already exists
 
     return uniqueFileName;
 }

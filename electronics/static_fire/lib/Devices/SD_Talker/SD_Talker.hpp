@@ -35,11 +35,12 @@ public:
     String createUniqueLogFile(String prefix);
     bool createNestedDirectories(String prefix);
     bool checkPresence();
+    bool checkFileOpen();
 
 private:
     File dataFile;
     String fileName;
-    bool isFileOpen;
+    bool fileOpen;
     String buffer;
     bool initialised;
 
@@ -49,6 +50,8 @@ private:
     uint8_t m_CS;
 
     bool sdWait(int timeout);
+
+    static constexpr const char *TAG = "SD_Talker";
 
 #endif
 };

@@ -19,14 +19,10 @@ namespace Params
 
         extern unsigned int LOG_SD;
         extern unsigned int LOG_SERIAL;
-        extern unsigned int SILENT_INDICATION;
 
         extern const char *LOG_FILE_PREFIX;
-        extern unsigned int LOG_THETA;
-        extern unsigned int LOG_THETA_DOT;
-        extern unsigned int LOG_PHI;
-        extern unsigned int LOG_PHI_DOT;
-        extern unsigned int LOG_SETPOINT;
+        extern unsigned int LOG_STATE;
+        extern unsigned int LOG_LOAD;
 
         extern unsigned int LOG_COLUMNS;
 

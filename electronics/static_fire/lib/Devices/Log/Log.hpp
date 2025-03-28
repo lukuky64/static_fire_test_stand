@@ -18,6 +18,7 @@ public:
     // bool beginSerial();
     // bool beginSD();
     bool startNewLog();
+    bool checkStartLog();
 
     // bool Logger(int len);
     bool logData(const float *data, int dataSize);

@@ -12,14 +12,10 @@ namespace Params
 
         unsigned int LOG_SD = 1;
         unsigned int LOG_SERIAL = 0;
-        unsigned int SILENT_INDICATION = 0;
 
-        const char *LOG_FILE_PREFIX = "log";
-        unsigned int LOG_THETA = 0;
-        unsigned int LOG_THETA_DOT = 0;
-        unsigned int LOG_PHI = 0;
-        unsigned int LOG_PHI_DOT = 0;
-        unsigned int LOG_SETPOINT = 0;
+        const char *LOG_FILE_PREFIX = "/LOG";
+        unsigned int LOG_STATE = 1;
+        unsigned int LOG_LOAD = 1;
 
         unsigned int LOG_COLUMNS = 3;
 
