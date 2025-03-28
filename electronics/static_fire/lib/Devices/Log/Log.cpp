@@ -21,47 +21,54 @@ Log::~Log()
 /*****************************************************************************/
 bool Log::startNewLog()
 {
-    setStartTime();
-
     if (m_sdLog)
     {
-        String startMsg = "Time(s)"; // Should always Log time
+        if (!m_sdTalker.checkFileOpen())
+        {
+            ESP_LOGI(TAG, "Starting new Log file!");
 
-        if (Params::LOG_THETA)
-        {
-            startMsg += ",Theta(rad)";
-        }
-        if (Params::LOG_THETA_DOT)
-        {
-            startMsg += ",theta_dot(rad/s)";
-        }
-        if (Params::LOG_PHI)
-        {
-            startMsg += ",Phi(rad)";
-        }
-        if (Params::LOG_PHI_DOT)
-        {
-            startMsg += ",phi_dot(rad/s)";
-        }
-        if (Params::LOG_SETPOINT)
-        {
-            startMsg += ",setpoint(A)";
-        }
+            setStartTime();
 
-        if (!m_sdTalker.createFile(startMsg, Params::LOG_FILE_PREFIX))
-        {
-            ESP_LOGE(TAG, "Failed to create file on SD card!");
-            return false;
-        }
-        else
-        {
-            ESP_LOGI(TAG, "Created file on SD card!");
-            return true;
+            String startMsg = "Time(s)"; // Should always Log time
+
+            if (Params::LOG_THETA)
+            {
+                startMsg += ",Theta(rad)";
+            }
+            if (Params::LOG_THETA_DOT)
+            {
+                startMsg += ",theta_dot(rad/s)";
+            }
+            if (Params::LOG_PHI)
+            {
+                startMsg += ",Phi(rad)";
+            }
+            if (Params::LOG_PHI_DOT)
+            {
+                startMsg += ",phi_dot(rad/s)";
+            }
+            if (Params::LOG_SETPOINT)
+            {
+                startMsg += ",setpoint(A)";
+            }
+
+            if (!m_sdTalker.createFile(startMsg, Params::LOG_FILE_PREFIX))
+            {
+                ESP_LOGE(TAG, "Failed to create file on SD card!");
+                return false;
+            }
+            else
+            {
+                ESP_LOGI(TAG, "Created file on SD card!");
+                return true;
+            }
         }
     }
 
-    if (m_serialLog)
+    if (m_serialLog) // !!! we need a condition here to prevent it fom being called repeatedly
     {
+        setStartTime();
+
         m_serialTalker.begin();
         return true;
     }

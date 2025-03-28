@@ -57,16 +57,21 @@ bool Devices::checkStatus()
 {
     bool loadCellReady = m_LoadCell.isReady();
     float bmsPercentage = m_bms.getPercentage();
-    bool sdCard = m_logger.m_sdTalker.checkPresence();
+    bool sdCardReady = m_logger.m_sdTalker.checkPresence();
     bool rf_connected = false;
     bool systemArmed = m_igniter.sytemArmed();
 
     bool allGood = loadCellReady && (bmsPercentage > 20);
 
-    UI.drawPageBar(loadCellReady, sdCard, rf_connected, systemArmed, allGood, bmsPercentage, false);
+    UI.drawPageBar(loadCellReady, sdCardReady, rf_connected, systemArmed, allGood, bmsPercentage, false);
 
     if (allGood)
     {
+        if (sdCardReady)
+        {
+            m_logger.startNewLog();
+        }
+
         m_indicators.showAllGood();
         return true;
     }

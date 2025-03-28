@@ -14,7 +14,7 @@ namespace Params
         unsigned int LOG_SERIAL = 0;
         unsigned int SILENT_INDICATION = 0;
 
-        const char *LOG_FILE_PREFIX = "log";
+        const char *LOG_FILE_PREFIX = "/LOG";
         unsigned int LOG_THETA = 0;
         unsigned int LOG_THETA_DOT = 0;
         unsigned int LOG_PHI = 0;
