@@ -233,7 +233,7 @@ void State_Machine::calibrationSeq()
         // m_devices.UI.showSuccess("Calibration");
     }
 
-    setCurrentState((succ) ? IDLE : CRITICAL_ERROR);
+    setCurrentState((succ) ? IDLE : IDLE); // !!!CRITICAL_ERROR, instead of critical error, either make new state or just go to idle and wait for button press to re-calibrate !!!!!!!!!!!!!!!!!!!!!!
 }
 
 void State_Machine::logSeq()
