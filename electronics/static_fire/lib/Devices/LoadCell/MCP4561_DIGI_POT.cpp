@@ -141,7 +141,13 @@ uint16_t MCP4561::writeVal(uint8_t u8WhichRegister, uint16_t u16Value)
 
     m_I2C_Bus->write(u8CmdByte);
     m_I2C_Bus->write(((uint8_t)(u16Value & 0xFF)));
-    m_I2C_Bus->endTransmission();
+    uint8_t error = m_I2C_Bus->endTransmission();
     m_I2C_Bus->flush();
-    return MCP4561_SUCCESS;
+
+    if (error == 0)
+    {
+        return MCP4561_SUCCESS;
+    }
+
+    return MCP4561_ERR;
 }
