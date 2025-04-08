@@ -46,7 +46,7 @@ bool Devices::checkStatus() {
   bool rf_connected = false;
   bool systemArmed = m_igniter.sytemArmed();
 
-  bool allGood = (bmsPercentage > m_criticalBattery);  // loadCellReady
+  bool allGood = (bmsPercentage > m_criticalBattery);
 
   UI.drawPageBar(loadCellReady, sdCardReady, rf_connected, systemArmed, allGood,
                  bmsPercentage, false);

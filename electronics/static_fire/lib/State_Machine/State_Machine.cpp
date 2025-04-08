@@ -48,13 +48,13 @@ void State_Machine::loop() {
     } break;
     case CALIBRATION: {
       // !!! commenting out so i can just look at initialisaiton for now
-
       calibrationSeq();
-      // logSeq(); // initial logging start
     } break;
     case IDLE: {
-      idleSeq();  // this is a blocking function. fine for our case but not good
-                  // for task manager
+      logSeq();   // initial logging start
+      idleSeq();  // this is a blocking function. fine for our case but not
+                  // good for task manager
+
     } break;
     case LIGHT_SLEEP: {
       lightSleepSeq();
@@ -114,14 +114,13 @@ void State_Machine::logTask(void *pvParameters) {
   //     initial tick count const TickType_t xFrequency =
   //     pdMS_TO_TICKS(Params::LOG_MS); // Logging period
 
-  //     while (true)
-  //     {
-
-  //         const float fakeData[] = {1, 2, 3}; // !!! replace
-  //         machine->m_devices.m_logger.logData(fakeData, Params::LOG_COLUMNS);
-  //         // around 160 microseconds without flush (3 float points and time),
-  //         ~37ms for flush (4kB) vTaskDelayUntil(&xLastWakeTime, xFrequency);
-  //     }
+  while (true) {
+    const float fakeData[] = {1, 2, 3};  // !!! replace
+    machine->m_devices.m_logger.logData(fakeData, Params::LOG_COLUMNS);
+    vTaskDelay(pdMS_TO_TICKS(Params::LOG_MS));  // Log period
+    // around 160 microseconds without flush (3 float points and time),
+    // ~37ms for flush (4kB) vTaskDelayUntil(&xLastWakeTime, xFrequency);
+  }
   // }
   // else
   // {
@@ -135,8 +134,8 @@ void State_Machine::criticalErrorSeq() {
 
   // m_devices.UI.showError("Critical Error");
 
-  vTaskDelay(pdMS_TO_TICKS(2000));  // wait for 2 seconds before restarting the
-                                    // initialisation sequence
+  vTaskDelay(pdMS_TO_TICKS(2000));  // wait for 2 seconds before restarting
+                                    // the initialisation sequence
 
   // destroy task
   vTaskDelete(m_indicationLoopTaskHandle);
@@ -172,6 +171,8 @@ void State_Machine::lightSleepSeq() {
 }
 
 void State_Machine::initialisationSeq() {
+  m_commander.init();
+
   STATES currState = m_devices.begin() ? CALIBRATION : CRITICAL_ERROR;
 
   setCurrentState(currState);
@@ -187,7 +188,7 @@ void State_Machine::indicationSeq() {
   }
 }
 
-void State_Machine::calibrationSeq() {
+bool State_Machine::calibrationSeq() {
   vTaskDelay(pdMS_TO_TICKS(50));
 
   ESP_LOGI("State_Machine CALIBRATION", "Calibration Sequence!");
@@ -207,20 +208,23 @@ void State_Machine::calibrationSeq() {
   setCurrentState(
       (succ) ? IDLE
              : IDLE);  // !!!CRITICAL_ERROR, instead of critical error, either
-                       // make new state or just go to idle and wait for button
-                       // press to re-calibrate !!!!!!!!!!!!!!!!!!!!!!
+  // make new state or just go to idle and wait for button
+  // press to re-calibrate !!!!!!!!!!!!!!!!!!!!!!
+
+  return succ;
 }
 
 void State_Machine::logSeq() {
   if (m_logTaskHandle == NULL) {
     xTaskCreate(&State_Machine::logTask, "Starting log Task", 4096, this,
-                PRIORITY_MEDIUM, &m_logTaskHandle);
+                PRIORITY_HIGH, &m_logTaskHandle);
   }
 }
 
 void State_Machine::idleSeq() {
   ESP_LOGI(TAG, "Idle Sequence!");
-  vTaskDelay(pdMS_TO_TICKS(50));
+  m_commander.run();
+  vTaskDelay(pdMS_TO_TICKS(200));
 }
 
 STATES State_Machine::getCurrentState() {
