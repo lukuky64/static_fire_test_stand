@@ -1,296 +1,263 @@
 #include "State_Machine.hpp"
 // #include "perfmon.hpp"
 
-State_Machine::State_Machine()
-{
-    m_stateMutex = xSemaphoreCreateMutex();
+State_Machine::State_Machine() { m_stateMutex = xSemaphoreCreateMutex(); }
+
+State_Machine::~State_Machine() {}
+
+void State_Machine::begin() {
+  // perfmon_start();
+
+  setCurrentState(INITIALISATION);
+
+  if (m_taskManagerTaskHandle == NULL) {
+    ESP_LOGI(TAG, "Starting Task Manager Task");
+    xTaskCreate(&State_Machine::taskManagerTask, "Starting Task Manager", 4096,
+                this, PRIORITY_MEDIUM, &m_taskManagerTaskHandle);
+  }
 }
 
-State_Machine::~State_Machine()
-{
+void State_Machine::taskManagerTask(void *pvParameters) {
+  vTaskDelay(pdMS_TO_TICKS(50));
+  // Convert generic pointer back to State_Machine*
+  auto *machine = static_cast<State_Machine *>(pvParameters);
+
+  while (true) {
+    machine->loop();
+
+    // ESP_LOGI(TAG, "Current state: %s",
+    // machine->stateToString(static_cast<STATES>(machine->getCurrentState())));
+    // UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+    // ESP_LOGI(TAG, "Remaining stack: %u words\n", uxHighWaterMark);
+
+    vTaskDelay(
+        pdMS_TO_TICKS(Params::TASK_MANAGER_MS));  // Loop current has blocking
+                                                  // in certain functions
+  }
 }
 
-void State_Machine::begin()
-{
-    // perfmon_start();
+void State_Machine::loop() {
+  STATES currState = getCurrentState();
 
-    setCurrentState(INITIALISATION);
+  switch (currState) {
+    case INITIALISATION: {
+      initialisationSeq();
+    } break;
+    case CRITICAL_ERROR: {
+      criticalErrorSeq();
+    } break;
+    case CALIBRATION: {
+      // !!! commenting out so i can just look at initialisaiton for now
 
-    if (m_taskManagerTaskHandle == NULL)
-    {
-        ESP_LOGI(TAG, "Starting Task Manager Task");
-        xTaskCreate(&State_Machine::taskManagerTask, "Starting Task Manager", 4096, this, PRIORITY_MEDIUM, &m_taskManagerTaskHandle);
-    }
-}
-
-void State_Machine::taskManagerTask(void *pvParameters)
-{
-    vTaskDelay(pdMS_TO_TICKS(50));
-    // Convert generic pointer back to State_Machine*
-    auto *machine = static_cast<State_Machine *>(pvParameters);
-
-    while (true)
-    {
-        machine->loop();
-
-        // ESP_LOGI(TAG, "Current state: %s", machine->stateToString(static_cast<STATES>(machine->getCurrentState())));
-        // UBaseType_t uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
-        // ESP_LOGI(TAG, "Remaining stack: %u words\n", uxHighWaterMark);
-
-        vTaskDelay(pdMS_TO_TICKS(Params::TASK_MANAGER_MS)); // Loop current has blocking in certain functions
-    }
-}
-
-void State_Machine::loop()
-{
-    STATES currState = getCurrentState();
-
-    switch (currState)
-    {
-    case INITIALISATION:
-    {
-        initialisationSeq();
-    }
-    break;
-    case CRITICAL_ERROR:
-    {
-        criticalErrorSeq();
-    }
-    break;
-    case CALIBRATION:
-    {
-        // !!! commenting out so i can just look at initialisaiton for now
-
-        calibrationSeq();
-        // logSeq(); // initial logging start
-    }
-    break;
-    case IDLE:
-    {
-        idleSeq(); // this is a blocking function. fine for our case but not good for task manager
-    }
-    break;
-    case LIGHT_SLEEP:
-    {
-        lightSleepSeq();
-        indicationSeq();
-        logSeq(); // go back to logging after sleep
-    }
-    break;
-    case CONTROL:
-    {
-        //
-    }
-    break;
+      calibrationSeq();
+      // logSeq(); // initial logging start
+    } break;
+    case IDLE: {
+      idleSeq();  // this is a blocking function. fine for our case but not good
+                  // for task manager
+    } break;
+    case LIGHT_SLEEP: {
+      lightSleepSeq();
+      indicationSeq();
+      logSeq();  // go back to logging after sleep
+    } break;
+    case CONTROL: {
+      //
+    } break;
     default:
-        break;
+      break;
+  }
+}
+
+void State_Machine::updateDataTask(void *pvParameters) {
+  vTaskDelay(pdMS_TO_TICKS(50));
+  // Convert generic pointer back to State_Machine*
+  auto *machine = static_cast<State_Machine *>(pvParameters);
+
+  while (true) {
+    machine->m_devices.aquireData();
+    vTaskDelay(pdMS_TO_TICKS(Params::AQUISITION_MS));
+  }
+}
+
+void State_Machine::indicationTask(void *pvParameters) {
+  vTaskDelay(pdMS_TO_TICKS(50));
+  // Convert generic pointer back to State_Machine*
+  auto *machine = static_cast<State_Machine *>(pvParameters);
+
+  while (true) {
+    bool requirementsMet = machine->m_devices.checkStatus();
+
+    if (!requirementsMet) {
+      machine->setCurrentState(CRITICAL_ERROR);
     }
+
+    vTaskDelay(pdMS_TO_TICKS(Params::INDICATION_MS));
+  }
 }
 
-void State_Machine::updateDataTask(void *pvParameters)
-{
-    vTaskDelay(pdMS_TO_TICKS(50));
-    // Convert generic pointer back to State_Machine*
-    auto *machine = static_cast<State_Machine *>(pvParameters);
+void State_Machine::logTask(void *pvParameters) {
+  vTaskDelay(pdMS_TO_TICKS(50));
+  // Convert generic pointer back to State_Machine*
+  auto *machine = static_cast<State_Machine *>(pvParameters);
 
-    while (true)
-    {
-        machine->m_devices.aquireData();
-        vTaskDelay(pdMS_TO_TICKS(Params::AQUISITION_MS));
-    }
+  ESP_LOGI(TAG, "Starting log Task");
+
+  // !!! remove comments
+
+  // bool successLog = machine->m_devices.m_logger.startNewLog();
+
+  // if (successLog)
+  // {
+  //     // This method is more precise than vTaskDelay
+  //     TickType_t xLastWakeTime = xTaskGetTickCount();              // Get
+  //     initial tick count const TickType_t xFrequency =
+  //     pdMS_TO_TICKS(Params::LOG_MS); // Logging period
+
+  //     while (true)
+  //     {
+
+  //         const float fakeData[] = {1, 2, 3}; // !!! replace
+  //         machine->m_devices.m_logger.logData(fakeData, Params::LOG_COLUMNS);
+  //         // around 160 microseconds without flush (3 float points and time),
+  //         ~37ms for flush (4kB) vTaskDelayUntil(&xLastWakeTime, xFrequency);
+  //     }
+  // }
+  // else
+  // {
+  //     machine->m_logTaskHandle = NULL; // clear the handle
+  //     vTaskDelete(NULL);
+  // }
 }
 
-void State_Machine::indicationTask(void *pvParameters)
-{
-    vTaskDelay(pdMS_TO_TICKS(50));
-    // Convert generic pointer back to State_Machine*
-    auto *machine = static_cast<State_Machine *>(pvParameters);
+void State_Machine::criticalErrorSeq() {
+  ESP_LOGE("State_Machine CRITICAL ERROR", "Critical Error Sequence!");
 
-    while (true)
-    {
-        bool requirementsMet = machine->m_devices.checkStatus();
+  // m_devices.UI.showError("Critical Error");
 
-        if (!requirementsMet)
-        {
-            machine->setCurrentState(CRITICAL_ERROR);
-        }
+  vTaskDelay(pdMS_TO_TICKS(2000));  // wait for 2 seconds before restarting the
+                                    // initialisation sequence
 
-        vTaskDelay(pdMS_TO_TICKS(Params::INDICATION_MS));
-    }
+  // destroy task
+  vTaskDelete(m_indicationLoopTaskHandle);
+  m_indicationLoopTaskHandle = NULL;  // clear the handle
+
+  setCurrentState(INITIALISATION);
 }
 
-void State_Machine::logTask(void *pvParameters)
-{
-    vTaskDelay(pdMS_TO_TICKS(50));
-    // Convert generic pointer back to State_Machine*
-    auto *machine = static_cast<State_Machine *>(pvParameters);
+void State_Machine::lightSleepSeq() {
+  if (m_logTaskHandle != NULL) {  // stop the log task before sleeping
 
-    ESP_LOGI(TAG, "Starting log Task");
+    // flush the buffer first
+    // m_devices.m_logger.forceFlush(); // !!! remove comment
 
-    // !!! remove comments
+    vTaskDelete(m_logTaskHandle);
+    m_logTaskHandle = NULL;
 
-    // bool successLog = machine->m_devices.m_logger.startNewLog();
-
-    // if (successLog)
-    // {
-    //     // This method is more precise than vTaskDelay
-    //     TickType_t xLastWakeTime = xTaskGetTickCount();              // Get initial tick count
-    //     const TickType_t xFrequency = pdMS_TO_TICKS(Params::LOG_MS); // Logging period
-
-    //     while (true)
-    //     {
-
-    //         const float fakeData[] = {1, 2, 3};                                 // !!! replace
-    //         machine->m_devices.m_logger.logData(fakeData, Params::LOG_COLUMNS); // around 160 microseconds without flush (3 float points and time), ~37ms for flush (4kB)
-    //         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-    //     }
-    // }
-    // else
-    // {
-    //     machine->m_logTaskHandle = NULL; // clear the handle
-    //     vTaskDelete(NULL);
-    // }
-}
-
-void State_Machine::criticalErrorSeq()
-{
-    ESP_LOGE("State_Machine CRITICAL ERROR", "Critical Error Sequence!");
-
-    // m_devices.UI.showError("Critical Error");
-
-    vTaskDelay(pdMS_TO_TICKS(2000)); // wait for 2 seconds before restarting the initialisation sequence
-
-    // destroy task
     vTaskDelete(m_indicationLoopTaskHandle);
-    m_indicationLoopTaskHandle = NULL; // clear the handle
+    m_indicationLoopTaskHandle = NULL;
+  }
 
-    setCurrentState(INITIALISATION);
+  if (m_devices.sleepMode()) {
+    vTaskDelay(pdMS_TO_TICKS(100));
+    ESP_LOGI(TAG, "Entering Light Sleep!");
+    esp_light_sleep_start();  // Enter Light Sleep
+
+    ESP_LOGI(TAG, "Waking up from light sleep!");
+    m_devices.wakeMode();
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+
+  setCurrentState(IDLE);
 }
 
-void State_Machine::lightSleepSeq()
-{
-    if (m_logTaskHandle != NULL)
-    { // stop the log task before sleeping
+void State_Machine::initialisationSeq() {
+  STATES currState = m_devices.begin() ? CALIBRATION : CRITICAL_ERROR;
 
-        // flush the buffer first
-        // m_devices.m_logger.forceFlush(); // !!! remove comment
+  setCurrentState(currState);
 
-        vTaskDelete(m_logTaskHandle);
-        m_logTaskHandle = NULL;
-
-        vTaskDelete(m_indicationLoopTaskHandle);
-        m_indicationLoopTaskHandle = NULL;
-    }
-
-    if (m_devices.sleepMode())
-    {
-        vTaskDelay(pdMS_TO_TICKS(100));
-        ESP_LOGI(TAG, "Entering Light Sleep!");
-        esp_light_sleep_start(); // Enter Light Sleep
-
-        ESP_LOGI(TAG, "Waking up from light sleep!");
-        m_devices.wakeMode();
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-
-    setCurrentState(IDLE);
+  indicationSeq();
 }
 
-void State_Machine::initialisationSeq()
-{
-    STATES currState = m_devices.begin() ? CALIBRATION : CRITICAL_ERROR;
-
-    setCurrentState(currState);
-
-    indicationSeq();
+void State_Machine::indicationSeq() {
+  if (m_indicationLoopTaskHandle == NULL) {
+    xTaskCreate(&State_Machine::indicationTask, "Indication Loop Task", 8192,
+                this, PRIORITY_LOW,
+                &m_indicationLoopTaskHandle);  // uses 1836 bytes of stack
+  }
 }
 
-void State_Machine::indicationSeq()
-{
+void State_Machine::calibrationSeq() {
+  vTaskDelay(pdMS_TO_TICKS(50));
 
-    if (m_indicationLoopTaskHandle == NULL)
-    {
-        xTaskCreate(&State_Machine::indicationTask, "Indication Loop Task", 8192, this, PRIORITY_LOW, &m_indicationLoopTaskHandle); // uses 1836 bytes of stack
-    }
+  ESP_LOGI("State_Machine CALIBRATION", "Calibration Sequence!");
+
+  bool succ = m_devices.calibrate();
+
+  if ((m_updateDataTaskHandle == NULL) && succ) {
+    xTaskCreate(&State_Machine::updateDataTask, "Starting Filters Task", 4096,
+                this, PRIORITY_HIGH, &m_updateDataTaskHandle);
+  }
+
+  if (succ) {
+    m_devices.m_indicators.showSuccess();
+    // m_devices.UI.showSuccess("Calibration");
+  }
+
+  setCurrentState(
+      (succ) ? IDLE
+             : IDLE);  // !!!CRITICAL_ERROR, instead of critical error, either
+                       // make new state or just go to idle and wait for button
+                       // press to re-calibrate !!!!!!!!!!!!!!!!!!!!!!
 }
 
-void State_Machine::calibrationSeq()
-{
-    vTaskDelay(pdMS_TO_TICKS(50));
-
-    ESP_LOGI("State_Machine CALIBRATION", "Calibration Sequence!");
-
-    bool succ = m_devices.calibrate();
-
-    if ((m_updateDataTaskHandle == NULL) && succ)
-    {
-        xTaskCreate(&State_Machine::updateDataTask, "Starting Filters Task", 4096, this, PRIORITY_HIGH, &m_updateDataTaskHandle);
-    }
-
-    if (succ)
-    {
-        m_devices.m_indicators.showSuccess();
-        // m_devices.UI.showSuccess("Calibration");
-    }
-
-    setCurrentState((succ) ? IDLE : IDLE); // !!!CRITICAL_ERROR, instead of critical error, either make new state or just go to idle and wait for button press to re-calibrate !!!!!!!!!!!!!!!!!!!!!!
+void State_Machine::logSeq() {
+  if (m_logTaskHandle == NULL) {
+    xTaskCreate(&State_Machine::logTask, "Starting log Task", 4096, this,
+                PRIORITY_MEDIUM, &m_logTaskHandle);
+  }
 }
 
-void State_Machine::logSeq()
-{
-    if (m_logTaskHandle == NULL)
-    {
-        xTaskCreate(&State_Machine::logTask, "Starting log Task", 4096, this, PRIORITY_MEDIUM, &m_logTaskHandle);
-    }
+void State_Machine::idleSeq() {
+  ESP_LOGI(TAG, "Idle Sequence!");
+  vTaskDelay(pdMS_TO_TICKS(50));
 }
 
-void State_Machine::idleSeq()
-{
-    ESP_LOGI(TAG, "Idle Sequence!");
-    vTaskDelay(pdMS_TO_TICKS(50));
-}
+STATES State_Machine::getCurrentState() {
+  STATES currState;
 
-STATES State_Machine::getCurrentState()
-{
-    STATES currState;
-
-    {
-        SemaphoreGuard guard(m_stateMutex);
-        if (guard.acquired())
-        {
-            currState = m_currState;
-        }
-    }
-
-    return currState;
-}
-
-void State_Machine::setCurrentState(STATES state)
-{
+  {
     SemaphoreGuard guard(m_stateMutex);
-    if (guard.acquired())
-    {
-        m_currState = state;
+    if (guard.acquired()) {
+      currState = m_currState;
     }
+  }
+
+  return currState;
 }
 
-const char *State_Machine::stateToString(STATES state)
-{
-    switch (state)
-    {
+void State_Machine::setCurrentState(STATES state) {
+  SemaphoreGuard guard(m_stateMutex);
+  if (guard.acquired()) {
+    m_currState = state;
+  }
+}
+
+const char *State_Machine::stateToString(STATES state) {
+  switch (state) {
     case INITIALISATION:
-        return "INITIALISATION";
+      return "INITIALISATION";
     case CRITICAL_ERROR:
-        return "CRITICAL_ERROR";
+      return "CRITICAL_ERROR";
     case CALIBRATION:
-        return "CALIBRATION";
+      return "CALIBRATION";
     case IDLE:
-        return "IDLE";
+      return "IDLE";
     case LIGHT_SLEEP:
-        return "LIGHT_SLEEP";
+      return "LIGHT_SLEEP";
     case CONTROL:
-        return "CONTROL";
+      return "CONTROL";
     default:
-        return "UNKNOWN_STATE";
-    }
+      return "UNKNOWN_STATE";
+  }
 }
