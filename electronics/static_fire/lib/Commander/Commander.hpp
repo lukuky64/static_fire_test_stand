@@ -12,7 +12,7 @@
 // #define SERIAL_INTERFACE Serial
 // #endif
 
-extern USBCDC USBSerial;  // Declare USBSerial globally
+// extern USBCDC USBSerial;  // Declare USBSerial globally
 
 #define SERIAL_INTERFACE USBSerial
 

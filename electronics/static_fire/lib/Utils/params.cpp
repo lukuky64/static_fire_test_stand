@@ -8,6 +8,7 @@ float AQUISITION_FREQ = 10;
 float LOG_FREQ = 1000;
 float INDICATION_FREQ = 5;
 float TASK_MANGR_FREQ = 5;
+float IDLE_FREQ = 5;
 
 unsigned int LOG_SD = 1;
 unsigned int LOG_SERIAL = 0;
@@ -24,4 +25,5 @@ float LOG_MS = 1000 / LOG_FREQ;
 float REFRESH_STATUS_MS = 10000;
 float INDICATION_MS = 1000 / INDICATION_FREQ;
 float TASK_MANAGER_MS = 1000 / TASK_MANGR_FREQ;
+float IDLE_MS = 1000 / IDLE_FREQ;
 }  // namespace Params

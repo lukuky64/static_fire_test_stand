@@ -16,6 +16,7 @@ namespace Params
         extern float LOG_FREQ;
         extern float INDICATION_FREQ;
         extern float TASK_MANGR_FREQ;
+        extern float IDLE_FREQ;
 
         extern unsigned int LOG_SD;
         extern unsigned int LOG_SERIAL;
@@ -32,4 +33,5 @@ namespace Params
         extern float REFRESH_STATUS_MS;
         extern float INDICATION_MS;
         extern float TASK_MANAGER_MS;
+        extern float IDLE_MS;
 }

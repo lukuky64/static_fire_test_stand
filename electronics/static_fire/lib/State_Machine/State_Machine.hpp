@@ -33,6 +33,8 @@ class State_Machine {
 
   // void cpuUsageMonitorSeq();
 
+  void setupCommands();
+
   void initialisationSeq();
   bool calibrationSeq();
   void lightSleepSeq();
@@ -52,6 +54,7 @@ class State_Machine {
   static void refreshStatusTask(void *pvParameters);
   static void updateDataTask(void *pvParameters);
   static void logTask(void *pvParameters);
+  static void idleTask(void *pvParameters);
 
  private:
   SemaphoreHandle_t m_stateMutex = NULL;
@@ -63,6 +66,7 @@ class State_Machine {
   Devices m_devices;
 
   // FreeRTOS Handles
+  TaskHandle_t m_idleTaskHandle = NULL;
   TaskHandle_t m_taskManagerTaskHandle = NULL;
   TaskHandle_t m_indicationLoopTaskHandle = NULL;
   TaskHandle_t m_refreshStatusTaskHandle = NULL;

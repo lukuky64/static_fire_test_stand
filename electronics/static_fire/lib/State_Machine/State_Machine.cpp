@@ -96,6 +96,17 @@ void State_Machine::indicationTask(void *pvParameters) {
   }
 }
 
+void State_Machine::idleTask(void *pvParameters) {
+  vTaskDelay(pdMS_TO_TICKS(50));
+  // Convert generic pointer back to State_Machine*
+  auto *machine = static_cast<State_Machine *>(pvParameters);
+
+  while (true) {
+    machine->m_commander.run();
+    vTaskDelay(pdMS_TO_TICKS(Params::IDLE_MS));
+  }
+}
+
 void State_Machine::logTask(void *pvParameters) {
   vTaskDelay(pdMS_TO_TICKS(50));
   // Convert generic pointer back to State_Machine*
@@ -170,8 +181,25 @@ void State_Machine::lightSleepSeq() {
   setCurrentState(IDLE);
 }
 
+void State_Machine::setupCommands() {
+  m_commander.addCommand('A', [this](const char *arg) {
+    ESP_LOGI(TAG, "Command A received: %s", arg);
+    m_devices.m_indicators.showSuccess();
+  });
+
+  m_commander.addCommand('F', [this](const char *arg) {
+    ESP_LOGI(TAG, "Command [FIRE], Password [%s]", arg);
+    if (m_devices.m_igniter.igniterReady()) {
+      if (m_devices.m_igniter.sendIgnition(arg)) {
+        m_devices.m_indicators.showSuccess();
+      }
+    }
+  });
+}
+
 void State_Machine::initialisationSeq() {
   m_commander.init();
+  setupCommands();
 
   STATES currState = m_devices.begin() ? CALIBRATION : CRITICAL_ERROR;
 
@@ -222,9 +250,11 @@ void State_Machine::logSeq() {
 }
 
 void State_Machine::idleSeq() {
-  ESP_LOGI(TAG, "Idle Sequence!");
-  m_commander.run();
-  vTaskDelay(pdMS_TO_TICKS(200));
+  if (m_idleTaskHandle == NULL) {
+    ESP_LOGI(TAG, "Idle Sequence!");
+    xTaskCreate(&State_Machine::idleTask, "Starting idle Task", 4096, this,
+                PRIORITY_LOW, &m_idleTaskHandle);
+  }
 }
 
 STATES State_Machine::getCurrentState() {

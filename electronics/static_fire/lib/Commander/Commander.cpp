@@ -2,7 +2,7 @@
 
 #include "params.hpp"
 
-USBCDC USBSerial(0);  // Define USBSerial once here
+// USBCDC USBSerial(0);  // Define USBSerial once here
 
 Commander::Commander(unsigned long baud) : m_baud(baud) {}
 
@@ -26,9 +26,7 @@ void Commander::addCommand(char cmdID, CommandCallback callback) {
 
 void Commander::run() {
   // Read all available characters
-  SERIAL_INTERFACE.println("test");
   while (SERIAL_INTERFACE.available()) {
-    ESP_LOGI(TAG, "Reading from serial interface");
     char c = SERIAL_INTERFACE.read();
 
     // SERIAL_INTERFACE.write(c);
