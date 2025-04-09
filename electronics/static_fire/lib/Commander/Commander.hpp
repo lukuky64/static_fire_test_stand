@@ -7,14 +7,14 @@
 #include "esp_log.h"
 
 // #if ARDUINO_USB_CDC_ON_BOOT
-// #define SERIAL_INTERFACE USBSerial
+// #define COMM_INTERFACE USBSerial
 // #else
-// #define SERIAL_INTERFACE Serial
+// #define COMM_INTERFACE Serial
 // #endif
 
 // extern USBCDC USBSerial;  // Declare USBSerial globally
 
-#define SERIAL_INTERFACE USBSerial
+#define COMM_INTERFACE USBSerial
 
 class Commander {
  public:

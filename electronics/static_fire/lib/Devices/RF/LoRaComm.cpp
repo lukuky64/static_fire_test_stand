@@ -7,8 +7,9 @@
 
 LoRaComm::LoRaComm() {}
 
-void LoRaComm::begin(int csPin, int intPin, float freqMHz) {
-  rf95 = new RH_RF95(csPin, intPin);
+void LoRaComm::begin(int csPin, int intPin, float freqMHz, SPIClass &spiBus) {
+  RH_SPI.setPins(1, 2, 3);  // !!! Need to get the spiBus pins.
+  rf95 = new RH_RF95(csPin, intPin, RH_SPI);
   INT_PIN = intPin;
   CS_PIN = csPin;
   RF95_FREQ = freqMHz;
@@ -18,11 +19,11 @@ void LoRaComm::begin(int csPin, int intPin, float freqMHz) {
     while (1);
   }
 
-  Serial.println("LoRa radio init successful!");
+  ESP_LOGI(TAG, "LoRa radio init successful!");
 
   // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM
   if (!rf95->setFrequency(RF95_FREQ)) {
-    Serial.println("set Frequency failed");
+    ESP_LOGE(TAG, "set Frequency failed");
     while (1);
   }
 
@@ -38,45 +39,44 @@ void LoRaComm::begin(int csPin, int intPin, float freqMHz) {
   // rf95->setModemConfig(RH_RF95::Bw31_25Cr48Sf512); // slow and long range
 }
 
-bool LoRaComm::createMessage() {
-  bool messageCreated = false;
-  if (Serial.available() > 0) {
-    memset(inputArray, 0, MAX_INPUT_LENGTH);  // Clear the buffer
-    int Index = 0;
+// bool LoRaComm::createMessage() {
+//   bool messageCreated = false;
+//   if (Serial.available() > 0) {
+//     memset(inputArray, 0, MAX_INPUT_LENGTH);  // Clear the buffer
+//     int Index = 0;
 
-    while (Serial.available() > 0 && Index < MAX_INPUT_LENGTH - 1) {
-      char incomingByte = Serial.read();
-      if (incomingByte == '\n') {
-        inputArray[Index] = '\0';
-        messageCreated = true;
-        break;
-      } else {
-        inputArray[Index] = incomingByte;
-        Index++;
-        delay(5);  // this fixes reliablity issues with the data somehow
-      }
-    }
-  }
+//     while (Serial.available() > 0 && Index < MAX_INPUT_LENGTH - 1) {
+//       char incomingByte = Serial.read();
+//       if (incomingByte == '\n') {
+//         inputArray[Index] = '\0';
+//         messageCreated = true;
+//         break;
+//       } else {
+//         inputArray[Index] = incomingByte;
+//         Index++;
+//         delay(5);  // this fixes reliablity issues with the data somehow
+//       }
+//     }
+//   }
 
-  return messageCreated;
-}
+//   return messageCreated;
+// }
 
-void LoRaComm::sendMessage() {
-  Serial.println("Trying to send message");
-  if (inputArray[0] != '\0') {  // Check if the message is not empty
-    Serial.print("Transmit: ");
-    Serial.println(inputArray);
-    rf95->send((uint8_t *)inputArray, strlen(inputArray));
-    delay(10);
-    rf95->waitPacketSent();
-    delay(10);
-  }
-}
+// void LoRaComm::sendMessage() {
+//   ESP_LOGE(TAG, "Trying to send message");
+//   if (inputArray[0] != '\0') {  // Check if the message is not empty
+//     ESP_LOGI(TAG, "Transmit: ");
+//     ESP_LOGI(TAG, inputArray);
+//     rf95->send((uint8_t *)inputArray, strlen(inputArray));
+//     delay(10);
+//     rf95->waitPacketSent();
+//     delay(10);
+//   }
+// }
 
 void LoRaComm::sendMessage(const char *inputmsg) {
   if (inputmsg[0] != '\0') {  // Check if the message is not empty
-    Serial.print("Transmit: ");
-    Serial.println(inputmsg);
+    ESP_LOGI(TAG, "Transmitting [%s]", inputmsg);
     rf95->send((uint8_t *)inputmsg, strlen(inputmsg));
     delay(10);
     rf95->waitPacketSent();
@@ -95,16 +95,11 @@ String LoRaComm::checkForReply() {
       buf[len] = '\0';                // Ensure null-termination
       message = String((char *)buf);  // Convert buf to a String and store it
 
-      // Continue to print details to the Serial Monitor
-      Serial.print("Received: ");
-      Serial.print(message);  // Print the message
-      Serial.print("\t RSSI: ");
-      Serial.print(rf95->lastRssi(), DEC);  // Print RSSI value
-      Serial.print("\t SNR: ");
-      Serial.println(rf95->lastSNR(),
-                     DEC);  // Print SNR value, then move to new line
+      ESP_LOGI(TAG, "Received [%s]", message.c_str());
+      ESP_LOGI(TAG, "\t RSSI [%d]", rf95->lastRssi());
+      ESP_LOGI(TAG, "\t SNR [%d]", rf95->lastSNR());
     } else {
-      Serial.println("Receive failed");
+      ESP_LOGE(TAG, "Receive failed");
     }
   }
   return message;  // Return the message received or an empty string if no

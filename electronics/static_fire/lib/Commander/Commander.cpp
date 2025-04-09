@@ -6,7 +6,7 @@
 
 Commander::Commander(unsigned long baud) : m_baud(baud) {}
 
-void Commander::init() { SERIAL_INTERFACE.begin(m_baud); }
+void Commander::init() { COMM_INTERFACE.begin(m_baud); }
 
 void Commander::addCommand(char cmdID, CommandCallback callback) {
   // Prevent overflow of the command array
@@ -16,20 +16,20 @@ void Commander::addCommand(char cmdID, CommandCallback callback) {
     _commandCount++;
 
     // this shouldn't really be here
-    SERIAL_INTERFACE.print("Added command. Type '");
-    SERIAL_INTERFACE.print(cmdID);
-    SERIAL_INTERFACE.println("' paramName=value' to set preferences.");
+    COMM_INTERFACE.print("Added command. Type '");
+    COMM_INTERFACE.print(cmdID);
+    COMM_INTERFACE.println("' paramName=value' to set preferences.");
   } else {
-    SERIAL_INTERFACE.println("Max command limit reached!");
+    COMM_INTERFACE.println("Max command limit reached!");
   }
 }
 
 void Commander::run() {
   // Read all available characters
-  while (SERIAL_INTERFACE.available()) {
-    char c = SERIAL_INTERFACE.read();
+  while (COMM_INTERFACE.available()) {
+    char c = COMM_INTERFACE.read();
 
-    // SERIAL_INTERFACE.write(c);
+    // COMM_INTERFACE.write(c);
 
     // If it's a newline (end of command), handle the buffer
     if (c == '\n' || c == '\r') {
@@ -44,7 +44,7 @@ void Commander::run() {
       } else {
         // Buffer overflow case, reset it
         _rxIndex = 0;
-        SERIAL_INTERFACE.println("Buffer overflow!");
+        COMM_INTERFACE.println("Buffer overflow!");
       }
     }
   }
@@ -71,14 +71,14 @@ void Commander::handleBuffer() {
   }
 
   // If no match, print an error
-  SERIAL_INTERFACE.print("Unknown command: ");
-  SERIAL_INTERFACE.println(cmdID);
+  COMM_INTERFACE.print("Unknown command: ");
+  COMM_INTERFACE.println(cmdID);
 }
 
 void Commander::setVariable(const char *arg) {
   //   const char *delimiter = strchr(arg, '=');
   //   if (!delimiter) {
-  //     SERIAL_INTERFACE.println("Invalid format. Use varName=value");
+  //     COMM_INTERFACE.println("Invalid format. Use varName=value");
   //     return;
   //   }
 
@@ -89,14 +89,14 @@ void Commander::setVariable(const char *arg) {
   //   if (valueStr.indexOf('.') >= 0) {
   //     float fValue = valueStr.toFloat();
   //     Params::savePreference(varName.c_str(), fValue);
-  //     SERIAL_INTERFACE.print("Stored float preference: ");
+  //     COMM_INTERFACE.print("Stored float preference: ");
   //   } else {
   //     unsigned int iValue = (unsigned int)valueStr.toInt();
   //     Params::savePreference(varName.c_str(), iValue);
-  //     SERIAL_INTERFACE.print("Stored integer preference: ");
+  //     COMM_INTERFACE.print("Stored integer preference: ");
   //   }
 
-  //   SERIAL_INTERFACE.print(varName);
-  //   SERIAL_INTERFACE.print(" = ");
-  //   SERIAL_INTERFACE.println(valueStr);
+  //   COMM_INTERFACE.print(varName);
+  //   COMM_INTERFACE.print(" = ");
+  //   COMM_INTERFACE.println(valueStr);
 }
