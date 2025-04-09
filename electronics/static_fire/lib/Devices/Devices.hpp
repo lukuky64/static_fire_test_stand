@@ -11,6 +11,7 @@
 #include "LoadCell/LoadCell.hpp"
 #include "Log/Log.hpp"
 #include "Pin_Defs.hpp"
+#include "RF/LoRaComm.hpp"
 #include "User_Interface.hpp"
 
 class Devices {
@@ -36,6 +37,7 @@ class Devices {
   Igniter m_igniter;
   LoadCell m_LoadCell;
   Log m_logger;
+  LoRaComm m_rfComm;
 
  private:
   TwoWire I2C_BUS;
