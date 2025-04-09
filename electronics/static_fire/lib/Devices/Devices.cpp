@@ -7,12 +7,11 @@ Devices::~Devices() {}
 bool Devices::begin() {
   // begin all coms and devices
   I2C_BUS.begin(I2C_SDA, I2C_SCL, 400000);
-  SPI_SD_BUS.begin(SPI_CLK_SD, SPI_MISO_SD, SPI_MOSI_SD);
-  SPI_RF_BUS.begin(SPI_CLK_RF, SPI_MISO_RF, SPI_MOSI_RF);
 
   m_indicators.setup(INDICATOR_LED);
 
-  m_rfComm.begin(SPI_CS_RF, RF_DIO, 915.0f);
+  m_rfComm.begin(SPI_CLK_RF, SPI_MISO_RF, SPI_MOSI_RF, SPI_CS_RF, RF_DIO,
+                 915.0f);
 
   UI.init(I2C_BUS);
   UI.begin();
@@ -20,6 +19,7 @@ bool Devices::begin() {
   m_LoadCell.init(I2C_BUS, LOAD_SENSE);
 
   if (Params::LOG_SD == 1) {
+    SPI_SD_BUS.begin(SPI_CLK_SD, SPI_MISO_SD, SPI_MOSI_SD);
     m_logger.selectLogSD(SPI_SD_BUS);  // priority to SD
   } else if (Params::LOG_SERIAL == 1) {
     m_logger.selectLogSerial();

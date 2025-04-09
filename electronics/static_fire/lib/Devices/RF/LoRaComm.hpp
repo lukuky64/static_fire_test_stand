@@ -11,7 +11,8 @@
 class LoRaComm {
  public:
   LoRaComm();
-  void begin(int csPin, int intPin, float freqMHz, SPIClass &spiBus);
+  void begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
+             uint8_t intPin, float freqMHz);
   // bool createMessage();
   // void sendMessage();
   void sendMessage(const char *inputmsg);  // overloaded function

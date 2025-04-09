@@ -7,8 +7,9 @@
 
 LoRaComm::LoRaComm() {}
 
-void LoRaComm::begin(int csPin, int intPin, float freqMHz, SPIClass &spiBus) {
-  RH_SPI.setPins(1, 2, 3);  // !!! Need to get the spiBus pins.
+void LoRaComm::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
+                     uint8_t intPin, float freqMHz) {
+  RH_SPI.setPins(MISO, MOSI, CLK);
   rf95 = new RH_RF95(csPin, intPin, RH_SPI);
   INT_PIN = intPin;
   CS_PIN = csPin;
@@ -19,14 +20,7 @@ void LoRaComm::begin(int csPin, int intPin, float freqMHz, SPIClass &spiBus) {
     while (1);
   }
 
-  ESP_LOGI(TAG, "LoRa radio init successful!");
-
-  // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM
-  if (!rf95->setFrequency(RF95_FREQ)) {
-    ESP_LOGE(TAG, "set Frequency failed");
-    while (1);
-  }
-
+  rf95->setFrequency(RF95_FREQ);
   // If using RFM95/96/97/98 modules which uses the PA_BOOST transmitter pin,
   // then you can set transmitter powers from 5 to 20 dBm:
   rf95->setTxPower(20, false);  // higher = longer range
@@ -37,6 +31,7 @@ void LoRaComm::begin(int csPin, int intPin, float freqMHz, SPIClass &spiBus) {
 
   // modem config choice
   // rf95->setModemConfig(RH_RF95::Bw31_25Cr48Sf512); // slow and long range
+  ESP_LOGI(TAG, "LoRa radio init successful!");
 }
 
 // bool LoRaComm::createMessage() {
