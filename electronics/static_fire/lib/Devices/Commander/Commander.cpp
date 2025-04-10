@@ -4,9 +4,12 @@
 
 // USBCDC USBSerial(0);  // Define USBSerial once here
 
-Commander::Commander(unsigned long baud) : m_baud(baud) {}
+Commander::Commander() {}
 
-void Commander::init() { COMM_INTERFACE.begin(m_baud); }
+void Commander::init(SerialCom *serialCom, LoRaCom *loraCom) {
+  m_loraCom = loraCom;
+  m_serialCom = serialCom;
+}
 
 void Commander::addCommand(char cmdID, CommandCallback callback) {
   // Prevent overflow of the command array
@@ -15,39 +18,25 @@ void Commander::addCommand(char cmdID, CommandCallback callback) {
     _commandList[_commandCount].callback = callback;
     _commandCount++;
 
-    // this shouldn't really be here
-    COMM_INTERFACE.print("Added command. Type '");
-    COMM_INTERFACE.print(cmdID);
-    COMM_INTERFACE.println("' paramName=value' to set preferences.");
+    char buffer[50];
+    snprintf(buffer, sizeof(buffer), "Added command [%c]", cmdID);
+    m_serialCom->sendData(buffer);
+
   } else {
-    COMM_INTERFACE.println("Max command limit reached!");
+    ESP_LOGE(TAG, "Command list is full! Cannot add command [%c]", cmdID);
   }
 }
 
 void Commander::run() {
   // Read all available characters
-  while (COMM_INTERFACE.available()) {
-    char c = COMM_INTERFACE.read();
-
-    // COMM_INTERFACE.write(c);
-
-    // If it's a newline (end of command), handle the buffer
-    if (c == '\n' || c == '\r') {
-      // Null-terminate the buffer and process
-      _rxBuffer[_rxIndex] = '\0';
-      handleBuffer();
-      _rxIndex = 0;
-    } else {
-      // Add the character to the buffer (with overflow check)
-      if (_rxIndex < (MAX_BUFFER_SIZE - 1)) {
-        _rxBuffer[_rxIndex++] = c;
-      } else {
-        // Buffer overflow case, reset it
-        _rxIndex = 0;
-        COMM_INTERFACE.println("Buffer overflow!");
-      }
+  if (!m_serialCom->getData(_rxBuffer, sizeof(_rxBuffer), &_rxIndex)) {
+    if (!m_loraCom->getData(_rxBuffer, sizeof(_rxBuffer), &_rxIndex)) {
+      return;
     }
   }
+
+  handleBuffer();
+  _rxIndex = 0;  // Reset index after processing
 }
 
 void Commander::handleBuffer() {

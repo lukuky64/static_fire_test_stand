@@ -102,6 +102,7 @@ void State_Machine::idleTask(void *pvParameters) {
   auto *machine = static_cast<State_Machine *>(pvParameters);
 
   while (true) {
+    
     machine->m_commander.run();
     vTaskDelay(pdMS_TO_TICKS(Params::IDLE_MS));
   }

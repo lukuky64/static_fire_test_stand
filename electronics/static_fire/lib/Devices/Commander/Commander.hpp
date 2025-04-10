@@ -4,6 +4,8 @@
 
 #include <functional>  // For std::function
 
+#include "LoRaCom/LoRaCom.hpp"
+#include "SerialCom/SerialCom.hpp"
 #include "esp_log.h"
 
 // #if ARDUINO_USB_CDC_ON_BOOT
@@ -14,15 +16,13 @@
 
 // extern USBCDC USBSerial;  // Declare USBSerial globally
 
-#define COMM_INTERFACE USBSerial
-
 class Commander {
  public:
   using CommandCallback = std::function<void(const char *)>;
 
-  explicit Commander(unsigned long baud = 115200);
+  explicit Commander();
 
-  void init();
+  void init(SerialCom *serialCom, LoRaCom *loraCom);
 
   void addCommand(char cmdID, CommandCallback callback);
   void run();
@@ -45,9 +45,10 @@ class Commander {
   char _rxBuffer[MAX_BUFFER_SIZE];
   int _rxIndex = 0;
 
-  unsigned long m_baud;
-
   void handleBuffer();
 
   static constexpr const char *TAG = "Commander";
+
+  SerialCom *m_serialCom;
+  LoRaCom *m_loraCom;
 };

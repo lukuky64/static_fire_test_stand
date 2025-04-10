@@ -1,6 +1,6 @@
-// LoRaComm.h
-#ifndef LoRaComm_h
-#define LoRaComm_h
+// LoRaCom.h
+#ifndef LoRaCom_h
+#define LoRaCom_h
 
 #include <Arduino.h>
 #include <RHSoftwareSPI.h>
@@ -8,15 +8,17 @@
 
 #include "esp_log.h"
 
-class LoRaComm {
+class LoRaCom {
  public:
-  LoRaComm();
+  LoRaCom();
   void begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
              uint8_t intPin, float freqMHz);
   // bool createMessage();
   // void sendMessage();
   void sendMessage(const char *inputmsg);  // overloaded function
   String checkForReply();
+
+  bool getData(char *buffer, const size_t bufferSize, int *_rxIndex);
 
  private:
   RH_RF95 *rf95;
