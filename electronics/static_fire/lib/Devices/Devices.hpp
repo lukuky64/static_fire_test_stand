@@ -39,7 +39,7 @@ class Devices {
   Igniter m_igniter;
   LoadCell m_LoadCell;
   Log m_logger;
-  LoRaComm m_rfComm;
+  LoRaCom m_rfComm;
   Button m_button{EXT_BTN2, 50};  // 50ms debounce delay
 
  private:
