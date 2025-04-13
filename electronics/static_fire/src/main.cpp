@@ -14,18 +14,19 @@ State_Machine stateMachine;
 // Commander commander(115200);  // Create a Commander instance
 
 void setup() {
-  // USBSerial.begin(115200);  // Initialize USBSerial with a baud rate of
-  // 115200
-  // commander.init();  // Initialize the commander
   stateMachine.begin();  // Start the state machine
-
-  // delay(100);
-  // devices.begin();
-
-  // Serial.println("Setup complete!");
+  // pinMode(GPIO_NUM_6, INPUT);
 }
 
 void loop() {
   // commander.run();  // Run the command parser
+
+  // float newReading = (float)analogReadMilliVolts(GPIO_NUM_6) / 1000.0f;
+  // ESP_LOGI("TAG", "Raw reading: %f", newReading);
+
+  // uint16_t newReading = analogRead(GPIO_NUM_6);
+  // ESP_LOGI("TAG", "Raw reading: %u", newReading);
+  // vTaskDelay(250);
+
   vTaskDelay(portMAX_DELAY);
 }

@@ -192,8 +192,10 @@ void State_Machine::setupCommands() {
     if (m_devices.m_igniter.igniterReady()) {
       if (m_devices.m_igniter.sendIgnition(arg)) {
         m_devices.m_indicators.showSuccess();
+        return;
       }
     }
+    ESP_LOGI(TAG, "Could not fire!");
   });
 }
 
@@ -295,3 +297,7 @@ const char *State_Machine::stateToString(STATES state) {
       return "UNKNOWN_STATE";
   }
 }
+
+// if (machine->m_devices.m_button.isPressed()) {
+//   machine->m_devices.m_igniter.sendIgnition("12345");
+// }

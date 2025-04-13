@@ -51,7 +51,7 @@ float LoadCell::getAveragedSamples(uint16_t numReadings) {
 }
 
 float LoadCell::getSample_mV() {
-  float newReading = analogReadMilliVolts(m_sensorPin);  // !!! test this
+  float newReading = (float)analogReadMilliVolts(m_sensorPin);  // !!! test this
   // any corrections
   return newReading;
 }

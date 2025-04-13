@@ -6,6 +6,7 @@
 #include "./Params.hpp"
 #include "Arduino.h"
 #include "BMS/BMS.hpp"
+#include "Button/Button.hpp"
 #include "Igniter/Igniter.hpp"
 #include "Indicators/Indicators.hpp"
 #include "LoadCell/LoadCell.hpp"
@@ -38,6 +39,7 @@ class Devices {
   LoadCell m_LoadCell;
   Log m_logger;
   LoRaComm m_rfComm;
+  Button m_button{EXT_BTN2, 50};  // 50ms debounce delay
 
  private:
   TwoWire I2C_BUS;

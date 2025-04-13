@@ -16,32 +16,34 @@ void Igniter::init(uint8_t controlPin, uint8_t sensePin, uint8_t armedPin) {
   // analogSetAttenuation(ADC_11db); // 150 mV ~ 2450 mV, attenuation is 11dB by
   // default so won't need this line
 
-  pinMode(m_igniterArmedPin, INPUT_PULLDOWN);
+  pinMode(m_igniterArmedPin, INPUT);
 }
 
 bool Igniter::igniterReady() {
   if (sytemArmed()) {
-    float filteredVoltage = analogReadMilliVolts(m_igniterSensePin) / 1000;
+    float filteredVoltage =
+        (float)analogReadMilliVolts(m_igniterSensePin) / 1000.0f;
 
     uint16_t numReadings = 10;
 
     for (int i = 1; i < numReadings; i++) {
       float newReading =
-          analogReadMilliVolts(m_igniterSensePin) / 1000;  // !!! test this
+          (float)analogReadMilliVolts(m_igniterSensePin) / 1000.0f;
       filteredVoltage =
           newReading * (1 - m_alpha) + (filteredVoltage * m_alpha);
       vTaskDelay(pdMS_TO_TICKS(10));
     }
 
-    ESP_LOGI(TAG, "Filtered reading: %f", filteredVoltage);
+    float resistance = 18.73f * (filteredVoltage - 0.685f);
 
-    // !!! This is arbitrary, we want to convert voltage to resistance
-    if (filteredVoltage < 0.5) {
-      ESP_LOGE(TAG, "Igniter faulty!");
-      return false;
-    } else {
+    ESP_LOGI(TAG, "Resistance reading: %f", resistance);
+
+    if ((resistance < 6) && (resistance > 0.5)) {
       ESP_LOGI(TAG, "Igniter OK!");
       return true;
+    } else {
+      ESP_LOGE(TAG, "Igniter faulty!");
+      return false;
     }
   } else {
     ESP_LOGE(TAG, "System not armed!");
@@ -50,7 +52,7 @@ bool Igniter::igniterReady() {
 }
 
 bool Igniter::sytemArmed() {
-  if (digitalRead(m_igniterArmedPin) == LOW) {
+  if (digitalRead(m_igniterArmedPin) == HIGH) {
     return false;
   }
 

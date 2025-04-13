@@ -23,6 +23,9 @@ Log::~Log() {}
 bool Log::startNewLog() {
   if (m_sdLog) {
     if (!m_sdTalker.checkFileOpen()) {
+      // vTaskDelay(pdMS_TO_TICKS(500));  // give some time here because sd
+      // detect
+      //                                  // will occur before the card is ready
       ESP_LOGI(TAG, "Starting new Log file!");
 
       setStartTime();

@@ -55,6 +55,8 @@ bool Devices::checkStatus() {
   UI.drawPageBar(loadCellReady, sdCardReady, rf_connected, systemArmed, allGood,
                  bmsPercentage, false);
 
+  m_igniter.igniterReady();
+
   if (allGood) {
     if (sdCardReady) {
       m_logger.startNewLog();

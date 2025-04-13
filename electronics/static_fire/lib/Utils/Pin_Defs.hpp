@@ -1,5 +1,7 @@
 #pragma once
 
+// #define PROTOBOARD
+
 // UART
 #define MCU_RX GPIO_NUM_44
 #define MCU_TX GPIO_NUM_43
@@ -16,8 +18,11 @@
 #define SPI_CLK_RF GPIO_NUM_12
 #define SPI_MISO_RF GPIO_NUM_13
 
-// SD Card
-#define SD_CD GPIO_NUM_3 //            !!!!!! This is supposed to be 48, but LED is here on the DEV board
+#ifdef PROTOBOARD
+#define SD_CD GPIO_NUM_3
+#else
+#define SD_CD GPIO_NUM_48
+#endif
 
 #define SPI_CLK_SD GPIO_NUM_35
 #define SPI_MOSI_SD GPIO_NUM_36
@@ -35,3 +40,6 @@
 #define IGNITER_ARMED GPIO_NUM_18
 
 #define LOAD_SENSE GPIO_NUM_5
+
+#define EXT_BTN1 GPIO_NUM_17
+#define EXT_BTN2 GPIO_NUM_7
