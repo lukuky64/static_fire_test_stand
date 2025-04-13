@@ -1,14 +1,14 @@
-// LoRaComm.cpp
-#include "LoRaComm.hpp"
+// LoRaCom.cpp
+#include "LoRaCom.hpp"
 
 // Issues:
 // 1. If two devices transmit at the exact same time, neither message will be
 // received
 
-LoRaComm::LoRaComm() {}
+LoRaCom::LoRaCom() {}
 
-void LoRaComm::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
-                     uint8_t intPin, float freqMHz) {
+void LoRaCom::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
+                    uint8_t intPin, float freqMHz) {
   RH_SPI.setPins(MISO, MOSI, CLK);
   rf95 = new RH_RF95(csPin, intPin, RH_SPI);
   INT_PIN = intPin;
@@ -34,7 +34,7 @@ void LoRaComm::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
   ESP_LOGI(TAG, "LoRa radio init successful!");
 }
 
-// bool LoRaComm::createMessage() {
+// bool LoRaCom::createMessage() {
 //   bool messageCreated = false;
 //   if (Serial.available() > 0) {
 //     memset(inputArray, 0, MAX_INPUT_LENGTH);  // Clear the buffer
@@ -57,7 +57,7 @@ void LoRaComm::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
 //   return messageCreated;
 // }
 
-// void LoRaComm::sendMessage() {
+// void LoRaCom::sendMessage() {
 //   ESP_LOGE(TAG, "Trying to send message");
 //   if (inputArray[0] != '\0') {  // Check if the message is not empty
 //     ESP_LOGI(TAG, "Transmit: ");
@@ -69,7 +69,7 @@ void LoRaComm::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
 //   }
 // }
 
-void LoRaComm::sendMessage(const char *inputmsg) {
+void LoRaCom::sendMessage(const char *inputmsg) {
   if (inputmsg[0] != '\0') {  // Check if the message is not empty
     ESP_LOGI(TAG, "Transmitting [%s]", inputmsg);
     rf95->send((uint8_t *)inputmsg, strlen(inputmsg));
@@ -80,7 +80,7 @@ void LoRaComm::sendMessage(const char *inputmsg) {
 }
 
 // return message
-String LoRaComm::checkForReply() {
+String LoRaCom::checkForReply() {
   String message =
       "";  // Initialize an empty String to store the received message
   if (rf95->available()) {
@@ -99,4 +99,9 @@ String LoRaComm::checkForReply() {
   }
   return message;  // Return the message received or an empty string if no
                    // message was received
+}
+
+bool LoRaCom::getData(char *buffer, const size_t bufferSize, int *_rxIndex) {
+  // checkForReply !!! need to implement
+  return false;
 }

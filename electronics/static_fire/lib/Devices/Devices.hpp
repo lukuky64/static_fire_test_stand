@@ -9,10 +9,11 @@
 #include "Button/Button.hpp"
 #include "Igniter/Igniter.hpp"
 #include "Indicators/Indicators.hpp"
+#include "LoRaCom/LoRaCom.hpp"
 #include "LoadCell/LoadCell.hpp"
 #include "Log/Log.hpp"
 #include "Pin_Defs.hpp"
-#include "RF/LoRaComm.hpp"
+#include "SerialCom/SerialCom.hpp"
 #include "User_Interface.hpp"
 
 class Devices {

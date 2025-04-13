@@ -83,5 +83,5 @@ class State_Machine {
 
   static constexpr const char *TAG = "State_Machine";
 
-  Commander m_commander = Commander(115200);
+  Commander m_commander = Commander();
 };

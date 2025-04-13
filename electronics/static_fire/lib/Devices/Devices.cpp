@@ -10,8 +10,9 @@ bool Devices::begin() {
 
   m_indicators.setup(INDICATOR_LED);
 
-  m_rfComm.begin(SPI_CLK_RF, SPI_MISO_RF, SPI_MOSI_RF, SPI_CS_RF, RF_DIO,
-                 915.0f);
+  m_LoRaCom.begin(SPI_CLK_RF, SPI_MISO_RF, SPI_MOSI_RF, SPI_CS_RF, RF_DIO,
+                  915.0f);
+  m_serialCom.init(115200);
 
   UI.init(I2C_BUS);
   UI.begin();
