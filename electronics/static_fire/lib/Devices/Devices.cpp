@@ -21,7 +21,7 @@ bool Devices::begin() {
 
   if (Params::LOG_SD == 1) {
     SPI_SD_BUS.begin(SPI_CLK_SD, SPI_MISO_SD, SPI_MOSI_SD);
-    m_logger.selectLogSD(SPI_SD_BUS);  // priority to SD
+    m_logger.selectLogSD(SPI_SD_BUS);
   } else if (Params::LOG_SERIAL == 1) {
     m_logger.selectLogSerial();
   }
@@ -56,7 +56,7 @@ bool Devices::checkStatus() {
   UI.drawPageBar(loadCellReady, sdCardReady, rf_connected, systemArmed, allGood,
                  bmsPercentage, false);
 
-  m_igniter.igniterReady();
+  // m_igniter.igniterReady();
 
   if (allGood) {
     if (sdCardReady) {

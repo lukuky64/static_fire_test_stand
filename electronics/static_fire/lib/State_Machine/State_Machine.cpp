@@ -51,6 +51,7 @@ void State_Machine::loop() {
       calibrationSeq();
     } break;
     case IDLE: {
+      loRaSeq();
       logSeq();   // initial logging start
       idleSeq();  // this is a blocking function. fine for our case but not
                   // good for task manager
@@ -102,9 +103,19 @@ void State_Machine::idleTask(void *pvParameters) {
   auto *machine = static_cast<State_Machine *>(pvParameters);
 
   while (true) {
-    
     machine->m_commander.run();
     vTaskDelay(pdMS_TO_TICKS(Params::IDLE_MS));
+  }
+}
+
+void State_Machine::LoRaTask(void *pvParameters) {
+  vTaskDelay(pdMS_TO_TICKS(50));
+  // Convert generic pointer back to State_Machine*
+  auto *machine = static_cast<State_Machine *>(pvParameters);
+
+  while (true) {
+    machine->m_devices.m_LoRaCom.sendMessage("Hello from ESP32!");
+    vTaskDelay(pdMS_TO_TICKS(Params::LORACOM_MS));
   }
 }
 
@@ -201,7 +212,7 @@ void State_Machine::setupCommands() {
 }
 
 void State_Machine::initialisationSeq() {
-  m_commander.init();
+  m_commander.init(&m_devices.m_serialCom, &m_devices.m_LoRaCom);
   setupCommands();
 
   STATES currState = m_devices.begin() ? CALIBRATION : CRITICAL_ERROR;
@@ -249,6 +260,13 @@ void State_Machine::logSeq() {
   if (m_logTaskHandle == NULL) {
     xTaskCreate(&State_Machine::logTask, "Starting log Task", 4096, this,
                 PRIORITY_HIGH, &m_logTaskHandle);
+  }
+}
+
+void State_Machine::loRaSeq() {
+  if (m_LoRaTaskHandle == NULL) {
+    xTaskCreate(&State_Machine::LoRaTask, "Starting LoRa Task", 4096, this,
+                PRIORITY_LOW, &m_LoRaTaskHandle);
   }
 }
 

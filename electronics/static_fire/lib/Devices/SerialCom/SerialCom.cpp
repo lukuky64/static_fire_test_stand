@@ -21,16 +21,16 @@ bool SerialCom::getData(char *buffer, const size_t maxBuffer, int *_rxIndex) {
     } else {
       // Add the character to the buffer (with overflow check)
       if (*_rxIndex < (maxBuffer - 1)) {
-        buffer[*_rxIndex++] = c;
+        buffer[(*_rxIndex)++] = c;
       } else {
         // Buffer overflow case, reset it
-        _rxIndex = 0;
+        *_rxIndex = 0;
         ESP_LOGE(TAG, "Buffer overflow!");
         break;
       }
     }
-    return false;  // Return the complete message
   }
+  return false;
 }
 
 void SerialCom::sendData(const char *data) {

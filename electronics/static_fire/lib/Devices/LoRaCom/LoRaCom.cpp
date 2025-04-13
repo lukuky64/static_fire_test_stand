@@ -23,7 +23,8 @@ void LoRaCom::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
   rf95->setFrequency(RF95_FREQ);
   // If using RFM95/96/97/98 modules which uses the PA_BOOST transmitter pin,
   // then you can set transmitter powers from 5 to 20 dBm:
-  rf95->setTxPower(20, false);  // higher = longer range
+  rf95->setTxPower(10, false);  // higher = longer range. !!! was 20, but if we
+                                // can get away with lower then that is better
   rf95->setSpreadingFactor(7);  // 6-12 -> higher = longer range
   // rf95->setSignalBandwidth(7800); // 7.8k to 500k. lower = longer range
   // rf95->setCodingRate4(8);        // 5-8 higher = longer range
@@ -49,7 +50,8 @@ void LoRaCom::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
 //       } else {
 //         inputArray[Index] = incomingByte;
 //         Index++;
-//         delay(5);  // this fixes reliablity issues with the data somehow
+//         vTaskDelay(pdMS_TO_TICKS(5));  // this fixes reliablity issues with
+//         the data somehow
 //       }
 //     }
 //   }
@@ -63,19 +65,19 @@ void LoRaCom::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
 //     ESP_LOGI(TAG, "Transmit: ");
 //     ESP_LOGI(TAG, inputArray);
 //     rf95->send((uint8_t *)inputArray, strlen(inputArray));
-//     delay(10);
+//     vTaskDelay(pdMS_TO_TICKS(10));
 //     rf95->waitPacketSent();
-//     delay(10);
+//     vTaskDelay(pdMS_TO_TICKS(10));
 //   }
 // }
 
 void LoRaCom::sendMessage(const char *inputmsg) {
-  if (inputmsg[0] != '\0') {  // Check if the message is not empty
+  if (inputmsg[0] != '\0') {  // Check the message is not empty
     ESP_LOGI(TAG, "Transmitting [%s]", inputmsg);
     rf95->send((uint8_t *)inputmsg, strlen(inputmsg));
-    delay(10);
+    vTaskDelay(pdMS_TO_TICKS(10));
     rf95->waitPacketSent();
-    delay(10);
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 

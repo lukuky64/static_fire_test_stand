@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Arduino.h"
-#include "Commander.hpp"
+#include "Commander/Commander.hpp"
 #include "Devices.hpp"
 #include "FreeRTOSConfig.h"
 #include "Params.hpp"
@@ -39,6 +39,8 @@ class State_Machine {
   bool calibrationSeq();
   void lightSleepSeq();
   void idleSeq();
+  void loRaSeq();
+
   // void checkActivityTask();
   STATES getCurrentState();
   void setCurrentState(STATES state);
@@ -55,6 +57,7 @@ class State_Machine {
   static void updateDataTask(void *pvParameters);
   static void logTask(void *pvParameters);
   static void idleTask(void *pvParameters);
+  static void LoRaTask(void *pvParameters);
 
  private:
   SemaphoreHandle_t m_stateMutex = NULL;
@@ -80,6 +83,8 @@ class State_Machine {
   TaskHandle_t m_cpuUsageTaskHandle = NULL;
 
   TaskHandle_t m_wifiTaskHandle = NULL;
+
+  TaskHandle_t m_LoRaTaskHandle = NULL;
 
   static constexpr const char *TAG = "State_Machine";
 

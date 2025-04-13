@@ -39,13 +39,14 @@ class Devices {
   Igniter m_igniter;
   LoadCell m_LoadCell;
   Log m_logger;
-  LoRaCom m_rfComm;
+  LoRaCom m_LoRaCom;
+  SerialCom m_serialCom;
   Button m_button{EXT_BTN2, 50};  // 50ms debounce delay
 
  private:
   TwoWire I2C_BUS;
   SPIClass SPI_SD_BUS;
-  SPIClass SPI_RF_BUS;
+  // SPIClass SPI_RF_BUS;
 
   const float m_criticalBattery = 20;  // 20% battery level
 };
