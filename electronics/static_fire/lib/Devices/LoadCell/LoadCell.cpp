@@ -25,12 +25,14 @@ LoadCell::~LoadCell() {}
 bool LoadCell::isReady() { return m_calibrated; }
 
 bool LoadCell::calibrate() {
-  float m_currentOffset_mV = getAveragedSamples(10);
-  ESP_LOGI(TAG, "Load cell offset before calibration: %f", m_currentOffset_mV);
+  float m_currentOffset_mV = getAveragedSamplesMv(20) - mid_mV;
+  ESP_LOGI(TAG, "Load cell offset before calibration: %f mV",
+           m_currentOffset_mV);
 
   if (trimRef(m_currentOffset_mV)) {
-    m_currentOffset_mV = getAveragedSamples(10);
-    ESP_LOGI(TAG, "Load cell offset after calibration: %f", m_currentOffset_mV);
+    m_currentOffset_mV = getAveragedSamplesMv(20) - mid_mV;
+    ESP_LOGI(TAG, "Load cell offset after calibration: %f mV",
+             m_currentOffset_mV);
     // !!! We can make this recursive if needed.
     m_calibrated = true;
     return true;
@@ -38,7 +40,7 @@ bool LoadCell::calibrate() {
   return false;
 }
 
-float LoadCell::getAveragedSamples(uint16_t numReadings) {
+float LoadCell::getAveragedSamplesMv(uint16_t numReadings) {
   float offsetmV = static_cast<float>(getSample_mV());
 
   for (int i = 1; i < numReadings; i++) {
@@ -51,9 +53,12 @@ float LoadCell::getAveragedSamples(uint16_t numReadings) {
 }
 
 float LoadCell::getSample_mV() {
-  float newReading = (float)analogReadMilliVolts(m_sensorPin);  // !!! test this
-  // any corrections
-  return newReading;
+  return (float)analogReadMilliVolts(m_sensorPin);  // !!! test this
+}
+
+float LoadCell::getForceSample() {
+  return (getSample_mV() - m_currentOffset_mV - mid_mV);
+  // !! will need some multiplier here
 }
 
 bool LoadCell::trimRef(float mV_offset) {

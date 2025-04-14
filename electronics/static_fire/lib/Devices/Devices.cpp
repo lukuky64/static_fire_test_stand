@@ -17,7 +17,7 @@ bool Devices::begin() {
   UI.init(I2C_BUS);
   UI.begin();
   m_igniter.init(IGNITER_CONTROL, IGNITER_SENSE, IGNITER_ARMED);
-  m_LoadCell.init(I2C_BUS, LOAD_SENSE);
+  m_loadCell.init(I2C_BUS, LOAD_SENSE);
 
   if (Params::LOG_SD == 1) {
     SPI_SD_BUS.begin(SPI_CLK_SD, SPI_MISO_SD, SPI_MOSI_SD);
@@ -34,7 +34,7 @@ bool Devices::begin() {
 }
 
 bool Devices::calibrate() {
-  bool loadCellCalibrated = m_LoadCell.calibrate();
+  bool loadCellCalibrated = m_loadCell.calibrate();
 
   bool somethingElse = true;
 
@@ -45,7 +45,7 @@ bool Devices::sleepMode() { return true; }
 void Devices::wakeMode() { return; }
 
 bool Devices::checkStatus() {
-  bool loadCellReady = m_LoadCell.isReady();
+  bool loadCellReady = m_loadCell.isReady();
   float bmsPercentage = m_bms.getPercentage();
   bool sdCardReady = m_logger.m_sdTalker.checkPresence();
   bool rf_connected = false;

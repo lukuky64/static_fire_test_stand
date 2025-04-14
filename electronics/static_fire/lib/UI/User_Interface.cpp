@@ -24,10 +24,9 @@ void User_Interface::begin() {
   drawIntroPage();
 
   drawPageBar(false, false, false, false, false, 0, true);
-  drawForce(250.0f);
 }
 
-void User_Interface::drawForce(float forceInput) {
+void User_Interface::drawForce(float forceInput, bool updateDisp) {
   static uint8_t fontSize = 2;
   static uint8_t numDigits = 9;
 
@@ -51,12 +50,17 @@ void User_Interface::drawForce(float forceInput) {
   display.print(buf);
   display.println("N");
 
-  display.display();
+  if (updateDisp) {
+    display.display();
+  }
 }
+
+void User_Interface::updateForce(float forceInput) { m_force = forceInput; }
 
 void User_Interface::drawPageBar(bool cell, bool sd, bool rf, bool armed,
                                  bool ready, float battPer,
                                  bool forceUpdateAll) {
+  drawForce(m_force, false);
   // Update Cell icon if changed
   if ((cell != m_mainPageStatus.cell) || forceUpdateAll) {
     display.fillRect(0, 0, 16, 16, SSD1306_BLACK);

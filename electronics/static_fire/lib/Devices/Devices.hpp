@@ -37,7 +37,7 @@ class Devices {
   User_Interface UI;
   BMS m_bms;
   Igniter m_igniter;
-  LoadCell m_LoadCell;
+  LoadCell m_loadCell;
   Log m_logger;
   LoRaCom m_LoRaCom;
   SerialCom m_serialCom;

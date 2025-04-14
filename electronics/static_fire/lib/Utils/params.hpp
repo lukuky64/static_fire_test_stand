@@ -29,10 +29,10 @@ extern unsigned int LOG_COLUMNS;
 
 // Periods (in ms)
 extern float AQUISITION_MS;
-extern float LOG_MS;
 extern float REFRESH_STATUS_MS;
 extern float INDICATION_MS;
 extern float TASK_MANAGER_MS;
 extern float IDLE_MS;
 extern float LORACOM_MS;
+extern float LOG_MS;
 }  // namespace Params

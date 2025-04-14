@@ -137,12 +137,20 @@ void State_Machine::logTask(void *pvParameters) {
   //     initial tick count const TickType_t xFrequency =
   //     pdMS_TO_TICKS(Params::LOG_MS); // Logging period
 
+  float DataList[] = {0.0f, 0.0f, 0.0f};  // fake data for testing
+
+  unsigned long lastDisplayed = 0;  // last time the force was displayed
+
   while (true) {
-    const float fakeData[] = {1, 2, 3};  // !!! replace
-    machine->m_devices.m_logger.logData(fakeData, Params::LOG_COLUMNS);
-    vTaskDelay(pdMS_TO_TICKS(Params::LOG_MS));  // Log period
-    // around 160 microseconds without flush (3 float points and time),
-    // ~37ms for flush (4kB) vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    DataList[2] = machine->m_devices.m_loadCell.getForceSample();
+    machine->m_devices.m_logger.logData(DataList, Params::LOG_COLUMNS);
+
+    if ((millis() - lastDisplayed) > Params::INDICATION_MS) {
+      machine->m_devices.UI.updateForce(DataList[2]);
+      lastDisplayed = millis();
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(Params::LOG_MS));
   }
   // }
   // else
@@ -237,10 +245,11 @@ bool State_Machine::calibrationSeq() {
 
   bool succ = m_devices.calibrate();
 
-  if ((m_updateDataTaskHandle == NULL) && succ) {
-    xTaskCreate(&State_Machine::updateDataTask, "Starting Filters Task", 4096,
-                this, PRIORITY_HIGH, &m_updateDataTaskHandle);
-  }
+  // if ((m_updateDataTaskHandle == NULL) && succ) {
+  //   xTaskCreate(&State_Machine::updateDataTask, "Starting Filters Task",
+  //   4096,
+  //               this, PRIORITY_HIGH, &m_updateDataTaskHandle);
+  // }
 
   if (succ) {
     m_devices.m_indicators.showSuccess();

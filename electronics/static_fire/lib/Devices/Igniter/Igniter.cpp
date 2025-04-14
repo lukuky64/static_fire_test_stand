@@ -24,7 +24,7 @@ bool Igniter::igniterReady() {
     float filteredVoltage =
         (float)analogReadMilliVolts(m_igniterSensePin) / 1000.0f;
 
-    uint16_t numReadings = 10;
+    uint16_t numReadings = 20;
 
     for (int i = 1; i < numReadings; i++) {
       float newReading =
@@ -38,7 +38,7 @@ bool Igniter::igniterReady() {
 
     ESP_LOGI(TAG, "Resistance reading: %f", resistance);
 
-    if ((resistance < 6) && (resistance > 0.5)) {
+    if ((resistance < 8) && (resistance > 0.5)) {
       ESP_LOGI(TAG, "Igniter OK!");
       return true;
     } else {
