@@ -62,24 +62,38 @@ void State_Machine::loop() {
       indicationSeq();
       logSeq();  // go back to logging after sleep
     } break;
-    case CONTROL: {
-      //
+    case FIRE: {
+      fireSequence();
     } break;
     default:
       break;
   }
 }
 
-void State_Machine::updateDataTask(void *pvParameters) {
-  vTaskDelay(pdMS_TO_TICKS(50));
-  // Convert generic pointer back to State_Machine*
-  auto *machine = static_cast<State_Machine *>(pvParameters);
-
-  while (true) {
-    machine->m_devices.aquireData();
-    vTaskDelay(pdMS_TO_TICKS(Params::AQUISITION_MS));
+void State_Machine::fireSequence() {
+  ESP_LOGI(TAG, "Fire sequence started");
+  if (recFirePassword != "") {
+    m_logPeriod_ms = Params::LOG_MS_FIRE;
+    vTaskDelay(pdMS_TO_TICKS(50));
+    if (m_devices.m_igniter.sendIgnition(recFirePassword)) {
+      m_devices.m_indicators.showSuccess();
+    }
+    recFirePassword = "";  // clear the password
   }
+
+  vTaskDelay(pdMS_TO_TICKS(1000));  //
 }
+
+// void State_Machine::updateDataTask(void *pvParameters) {
+//   vTaskDelay(pdMS_TO_TICKS(50));
+//   // Convert generic pointer back to State_Machine*
+//   auto *machine = static_cast<State_Machine *>(pvParameters);
+
+//   while (true) {
+//     machine->m_devices.aquireData();
+//     vTaskDelay(pdMS_TO_TICKS(Params::AQUISITION_MS));
+//   }
+// }
 
 void State_Machine::indicationTask(void *pvParameters) {
   vTaskDelay(pdMS_TO_TICKS(50));
@@ -137,20 +151,22 @@ void State_Machine::logTask(void *pvParameters) {
   //     initial tick count const TickType_t xFrequency =
   //     pdMS_TO_TICKS(Params::LOG_MS); // Logging period
 
-  float DataList[] = {0.0f, 0.0f, 0.0f};  // fake data for testing
+  float DataList[] = {0.0f, 0.0f};  // fake data for testing
 
   unsigned long lastDisplayed = 0;  // last time the force was displayed
 
   while (true) {
-    DataList[2] = machine->m_devices.m_loadCell.getForceSample();
+    DataList[0] = static_cast<float>(machine->getCurrentState());
+    DataList[1] =
+        machine->m_devices.m_loadCell.getForceSample();  // !!! time this
     machine->m_devices.m_logger.logData(DataList, Params::LOG_COLUMNS);
 
     if ((millis() - lastDisplayed) > Params::INDICATION_MS) {
-      machine->m_devices.UI.updateForce(DataList[2]);
+      machine->m_devices.UI.updateForce(DataList[1]);
       lastDisplayed = millis();
     }
 
-    vTaskDelay(pdMS_TO_TICKS(Params::LOG_MS));
+    vTaskDelay(pdMS_TO_TICKS(machine->m_logPeriod_ms));
   }
   // }
   // else
@@ -210,10 +226,10 @@ void State_Machine::setupCommands() {
   m_commander.addCommand('F', [this](const char *arg) {
     ESP_LOGI(TAG, "Command [FIRE], Password [%s]", arg);
     if (m_devices.m_igniter.igniterReady()) {
-      if (m_devices.m_igniter.sendIgnition(arg)) {
-        m_devices.m_indicators.showSuccess();
-        return;
-      }
+      setCurrentState(FIRE);
+      recFirePassword = const_cast<char *>(arg);
+      // give some time to get into the fire state
+      return;
     }
     ESP_LOGI(TAG, "Could not fire!");
   });
@@ -228,6 +244,8 @@ void State_Machine::initialisationSeq() {
   setCurrentState(currState);
 
   indicationSeq();
+
+  m_logPeriod_ms = Params::LOG_MS_IDLE;  // set the log period to idle
 }
 
 void State_Machine::indicationSeq() {
@@ -319,8 +337,8 @@ const char *State_Machine::stateToString(STATES state) {
       return "IDLE";
     case LIGHT_SLEEP:
       return "LIGHT_SLEEP";
-    case CONTROL:
-      return "CONTROL";
+    case FIRE:
+      return "FIRE";
     default:
       return "UNKNOWN_STATE";
   }

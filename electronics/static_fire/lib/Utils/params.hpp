@@ -12,7 +12,8 @@ namespace Params {
 extern unsigned int ALLOW_SLEEP;
 extern float SLP_TIMEOUT_MS;
 extern float AQUISITION_FREQ;
-extern float LOG_FREQ;
+extern float LOG_FREQ_IDLE;
+extern float LOG_FREQ_FIRE;
 extern float INDICATION_FREQ;
 extern float TASK_MANGR_FREQ;
 extern float IDLE_FREQ;
@@ -34,5 +35,6 @@ extern float INDICATION_MS;
 extern float TASK_MANAGER_MS;
 extern float IDLE_MS;
 extern float LORACOM_MS;
-extern float LOG_MS;
+extern float LOG_MS_IDLE;
+extern float LOG_MS_FIRE;
 }  // namespace Params

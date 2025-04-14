@@ -20,7 +20,7 @@ enum STATES {
   CALIBRATION = 2,
   IDLE = 3,
   LIGHT_SLEEP = 4,
-  CONTROL = 5,
+  FIRE = 5,
 };
 
 class State_Machine {
@@ -40,6 +40,7 @@ class State_Machine {
   void lightSleepSeq();
   void idleSeq();
   void loRaSeq();
+  void fireSequence();
 
   // void checkActivityTask();
   STATES getCurrentState();
@@ -53,8 +54,8 @@ class State_Machine {
   // FreeRTOS Tasks
   static void taskManagerTask(void *pvParameters);
   static void indicationTask(void *pvParameters);
-  static void refreshStatusTask(void *pvParameters);
-  static void updateDataTask(void *pvParameters);
+  // static void refreshStatusTask(void *pvParameters);
+  // static void updateDataTask(void *pvParameters);
   static void logTask(void *pvParameters);
   static void idleTask(void *pvParameters);
   static void LoRaTask(void *pvParameters);
@@ -89,4 +90,8 @@ class State_Machine {
   static constexpr const char *TAG = "State_Machine";
 
   Commander m_commander = Commander();
+
+  char *recFirePassword = "";
+
+  float m_logPeriod_ms;
 };
