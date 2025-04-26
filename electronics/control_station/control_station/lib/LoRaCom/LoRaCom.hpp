@@ -17,6 +17,7 @@ class LoRaCom {
   // void sendMessage();
   void sendMessage(const char *inputmsg);  // overloaded function
   String checkForReply();
+  int16_t getRssi();
 
   bool getData(char *buffer, const size_t bufferSize, int *_rxIndex);
 

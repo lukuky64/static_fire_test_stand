@@ -103,6 +103,10 @@ String LoRaCom::checkForReply() {
                    // message was received
 }
 
+int16_t LoRaCom::getRssi() {
+  return rf95->lastRssi();  // Return the last received signal strength
+}
+
 bool LoRaCom::getData(char *buffer, const size_t bufferSize, int *_rxIndex) {
   String message = checkForReply();
   if (message.length() > 0) {

@@ -73,7 +73,7 @@ void LoRaCom::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
 
 void LoRaCom::sendMessage(const char *inputmsg) {
   if (inputmsg[0] != '\0') {  // Check the message is not empty
-    ESP_LOGI(TAG, "Transmitting [%s]", inputmsg);
+    // ESP_LOGI(TAG, "Transmitting [%s]", inputmsg);
     rf95->send((uint8_t *)inputmsg, strlen(inputmsg));
     vTaskDelay(pdMS_TO_TICKS(10));
     rf95->waitPacketSent();
@@ -101,6 +101,10 @@ String LoRaCom::checkForReply() {
   }
   return message;  // Return the message received or an empty string if no
                    // message was received
+}
+
+int16_t LoRaCom::getRssi() {
+  return rf95->lastRssi();  // Return the last received signal strength
 }
 
 bool LoRaCom::getData(char *buffer, const size_t bufferSize, int *_rxIndex) {

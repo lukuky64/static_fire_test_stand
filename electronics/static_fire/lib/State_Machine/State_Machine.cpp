@@ -311,6 +311,13 @@ void State_Machine::setupCommands() {
     }
     ESP_LOGI(TAG, "Could not fire!");
   });
+
+  m_commander.addCommand('R', [this](const char *arg) {
+    ESP_LOGI(TAG, "Command R received: %s", arg);
+    int16_t rssi = m_devices.m_LoRaCom.getRssi();
+    String msg = "UPLINK_RSSI = " + String(m_devices.m_LoRaCom.getRssi());
+    m_devices.m_LoRaCom.sendMessage(msg.c_str());
+  });
 }
 
 void State_Machine::initialisationSeq() {
