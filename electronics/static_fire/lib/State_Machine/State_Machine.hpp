@@ -25,6 +25,12 @@ enum STATES {
 
 class State_Machine {
  public:
+  static State_Machine *instance;  // Static instance pointer
+
+  static void onTimerInterrupt();  // Static ISR
+  void timerCallback();            // Actual class method
+  void setupHardwareTimer(uint32_t frequency_hz, void (*callback)(void));
+
   State_Machine();
   ~State_Machine();
 
@@ -47,15 +53,16 @@ class State_Machine {
   void setCurrentState(STATES state);
   void criticalErrorSeq();
   void indicationSeq();
+  void filterDataSeq();
 
   void logSeq();
-  const char *stateToString(STATES state);
+  String stateToString(STATES state);
 
   // FreeRTOS Tasks
   static void taskManagerTask(void *pvParameters);
   static void indicationTask(void *pvParameters);
   // static void refreshStatusTask(void *pvParameters);
-  // static void updateDataTask(void *pvParameters);
+  static void filterDataTask(void *pvParameters);
   static void logTask(void *pvParameters);
   static void idleTask(void *pvParameters);
   static void LoRaTask(void *pvParameters);
@@ -75,7 +82,7 @@ class State_Machine {
   TaskHandle_t m_indicationLoopTaskHandle = NULL;
   TaskHandle_t m_refreshStatusTaskHandle = NULL;
 
-  TaskHandle_t m_updateDataTaskHandle = NULL;
+  TaskHandle_t m_filterDataTaskHandle = NULL;
   TaskHandle_t m_balanceTaskHandle = NULL;
   TaskHandle_t m_BLDCTaskHandle = NULL;
 
@@ -94,4 +101,12 @@ class State_Machine {
   char *recFirePassword = "";
 
   float m_logPeriod_ms;
+  float m_loraPeriod_ms;
+
+  float m_filteredForce = 0.0f;
+
+  // float alpha = 0.061f;
+  // float filtered = 0.0f;
+  // int downsample_counter = 0;
+  // const int downsample_factor = 5;
 };

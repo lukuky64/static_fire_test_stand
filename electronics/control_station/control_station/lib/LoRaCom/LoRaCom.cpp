@@ -92,9 +92,9 @@ String LoRaCom::checkForReply() {
       buf[len] = '\0';                // Ensure null-termination
       message = String((char *)buf);  // Convert buf to a String and store it
 
-      ESP_LOGI(TAG, "Received [%s]", message.c_str());
-      ESP_LOGI(TAG, "\t RSSI [%d]", rf95->lastRssi());
-      ESP_LOGI(TAG, "\t SNR [%d]", rf95->lastSNR());
+      // ESP_LOGI(TAG, "Received [%s]", message.c_str());
+      // ESP_LOGI(TAG, "\t RSSI [%d]", rf95->lastRssi());
+      // ESP_LOGI(TAG, "\t SNR [%d]", rf95->lastSNR());
     } else {
       ESP_LOGE(TAG, "Receive failed");
     }

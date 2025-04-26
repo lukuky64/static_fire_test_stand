@@ -1,11 +1,18 @@
 #include "State_Machine.hpp"
+
+#include "driver/timer.h"  // ESP-IDF timer driver
+
 // #include "perfmon.hpp"
+
+State_Machine *State_Machine::instance = nullptr;
 
 State_Machine::State_Machine() { m_stateMutex = xSemaphoreCreateMutex(); }
 
 State_Machine::~State_Machine() {}
 
 void State_Machine::begin() {
+  instance = this;  // Set static pointer to this instance
+
   // perfmon_start();
 
   setCurrentState(INITIALISATION);
@@ -15,6 +22,36 @@ void State_Machine::begin() {
     xTaskCreate(&State_Machine::taskManagerTask, "Starting Task Manager", 4096,
                 this, PRIORITY_MEDIUM, &m_taskManagerTaskHandle);
   }
+}
+
+void State_Machine::setupHardwareTimer(uint32_t frequency_hz,
+                                       void (*callback)(void)) {
+  const timer_group_t timer_group = TIMER_GROUP_0;  // Use Timer Group 0
+  const timer_idx_t timer_idx = TIMER_0;            // Use Timer 0
+
+  timer_config_t config{};
+  config.divider = 80;  // 1 tick = 1 microsecond
+  config.counter_dir = TIMER_COUNT_UP;
+  config.counter_en = TIMER_PAUSE;
+  config.alarm_en = TIMER_ALARM_EN;
+  config.auto_reload = TIMER_AUTORELOAD_EN;
+  config.clk_src = TIMER_SRC_CLK_APB;
+
+  timer_init(timer_group, timer_idx, &config);
+
+  timer_set_counter_value(timer_group, timer_idx, 0x00000000ULL);
+
+  uint64_t alarm_value_us =
+      1000000ULL / frequency_hz;  // period in microseconds
+  timer_set_alarm_value(timer_group, timer_idx, alarm_value_us);
+
+  timer_enable_intr(timer_group, timer_idx);
+
+  // Attach ISR
+  timer_isr_callback_add(timer_group, timer_idx, (timer_isr_t)callback, NULL,
+                         0);
+
+  timer_start(timer_group, timer_idx);
 }
 
 void State_Machine::taskManagerTask(void *pvParameters) {
@@ -52,6 +89,7 @@ void State_Machine::loop() {
     } break;
     case IDLE: {
       loRaSeq();
+      filterDataSeq();
       logSeq();   // initial logging start
       idleSeq();  // this is a blocking function. fine for our case but not
                   // good for task manager
@@ -70,7 +108,55 @@ void State_Machine::loop() {
   }
 }
 
+void State_Machine::filterDataSeq() {
+  if ((m_filterDataTaskHandle == NULL)) {
+    xTaskCreate(&State_Machine::filterDataTask, "Starting filter Task", 4096,
+                this, PRIORITY_HIGH, &m_filterDataTaskHandle);
+  }
+}
+
+// void State_Machine::onTimerInterrupt() {
+//   if (instance != nullptr) {
+//     instance->timerCallback();
+//   }
+// }
+
+// void State_Machine::timerCallback() {
+//   float raw_reading = m_devices.m_loadCell.getForceSample();
+//   filtered = alpha * raw_reading + (1.0f - alpha) * filtered;
+
+//   if (++downsample_counter >= downsample_factor) {
+//     m_filteredForce = filtered;
+//     downsample_counter = 0;
+//   }
+// }
+
+void State_Machine::filterDataTask(void *pvParameters) {
+  vTaskDelay(pdMS_TO_TICKS(50));  // Initial delay
+
+  auto *machine = static_cast<State_Machine *>(pvParameters);
+
+  float alpha = 0.2f;  // Smoothing factor
+  float filtered = 0.0f;
+  float raw_reading = 0.0f;
+  int downsample_counter = 0;
+  const int downsample_factor = 5;  // Save every nth filtered sample
+
+  while (true) {
+    raw_reading = machine->m_devices.m_loadCell.getForceSample();
+    filtered = alpha * raw_reading + (1.0f - alpha) * filtered;
+
+    if (++downsample_counter >= downsample_factor) {
+      machine->m_filteredForce = filtered;
+      downsample_counter = 0;
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(Params::AQUISITION_MS));
+  }
+}
+
 void State_Machine::fireSequence() {
+  m_loraPeriod_ms = Params::LORACOM_MS;
   ESP_LOGI(TAG, "Fire sequence started");
   if (recFirePassword != "") {
     m_logPeriod_ms = Params::LOG_MS_FIRE;
@@ -83,17 +169,6 @@ void State_Machine::fireSequence() {
 
   vTaskDelay(pdMS_TO_TICKS(1000));  //
 }
-
-// void State_Machine::updateDataTask(void *pvParameters) {
-//   vTaskDelay(pdMS_TO_TICKS(50));
-//   // Convert generic pointer back to State_Machine*
-//   auto *machine = static_cast<State_Machine *>(pvParameters);
-
-//   while (true) {
-//     machine->m_devices.aquireData();
-//     vTaskDelay(pdMS_TO_TICKS(Params::AQUISITION_MS));
-//   }
-// }
 
 void State_Machine::indicationTask(void *pvParameters) {
   vTaskDelay(pdMS_TO_TICKS(50));
@@ -128,8 +203,11 @@ void State_Machine::LoRaTask(void *pvParameters) {
   auto *machine = static_cast<State_Machine *>(pvParameters);
 
   while (true) {
-    machine->m_devices.m_LoRaCom.sendMessage("Hello from ESP32!");
-    vTaskDelay(pdMS_TO_TICKS(Params::LORACOM_MS));
+    String message =
+        "State = " + machine->stateToString(machine->getCurrentState()) + "\n" +
+        "Force = " + String(machine->m_filteredForce) + "N";
+    machine->m_devices.m_LoRaCom.sendMessage(message.c_str());
+    vTaskDelay(pdMS_TO_TICKS(machine->m_loraPeriod_ms));
   }
 }
 
@@ -157,8 +235,8 @@ void State_Machine::logTask(void *pvParameters) {
 
   while (true) {
     DataList[0] = static_cast<float>(machine->getCurrentState());
-    DataList[1] =
-        machine->m_devices.m_loadCell.getForceSample();  // !!! time this
+    DataList[1] = machine->m_filteredForce;
+    // machine->m_devices.m_loadCell.getForceSample();
     machine->m_devices.m_logger.logData(DataList, Params::LOG_COLUMNS);
 
     if ((millis() - lastDisplayed) > Params::INDICATION_MS) {
@@ -241,11 +319,16 @@ void State_Machine::initialisationSeq() {
 
   STATES currState = m_devices.begin() ? CALIBRATION : CRITICAL_ERROR;
 
+  // if (currState == CALIBRATION) {
+  //   setupHardwareTimer(2000, State_Machine::onTimerInterrupt);
+  // }
+
   setCurrentState(currState);
 
   indicationSeq();
 
   m_logPeriod_ms = Params::LOG_MS_IDLE;  // set the log period to idle
+  m_loraPeriod_ms = 1000.0f;             // 1Hz until fire sequence starts
 }
 
 void State_Machine::indicationSeq() {
@@ -262,12 +345,6 @@ bool State_Machine::calibrationSeq() {
   ESP_LOGI("State_Machine CALIBRATION", "Calibration Sequence!");
 
   bool succ = m_devices.calibrate();
-
-  // if ((m_updateDataTaskHandle == NULL) && succ) {
-  //   xTaskCreate(&State_Machine::updateDataTask, "Starting Filters Task",
-  //   4096,
-  //               this, PRIORITY_HIGH, &m_updateDataTaskHandle);
-  // }
 
   if (succ) {
     m_devices.m_indicators.showSuccess();
@@ -325,7 +402,7 @@ void State_Machine::setCurrentState(STATES state) {
   }
 }
 
-const char *State_Machine::stateToString(STATES state) {
+String State_Machine::stateToString(STATES state) {
   switch (state) {
     case INITIALISATION:
       return "INITIALISATION";

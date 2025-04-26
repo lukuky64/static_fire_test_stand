@@ -7,7 +7,7 @@ LoadCell::LoadCell() {}
 void LoadCell::init(TwoWire &I2C_Bus, uint8_t sensorPin) {
   m_digitalTrim.init(0x2E, I2C_Bus);
 
-  if (m_digitalTrim.potConnectAll(MCP4561_WIPER_0 == MCP4561_SUCCESS)) {
+  if (m_digitalTrim.potConnectAll(MCP4561_WIPER_0) == MCP4561_SUCCESS) {
     ESP_LOGI(TAG, "Pot connected!");
   } else {
     ESP_LOGI(TAG, "Pot NOT connected!");
@@ -25,18 +25,25 @@ LoadCell::~LoadCell() {}
 bool LoadCell::isReady() { return m_calibrated; }
 
 bool LoadCell::calibrate() {
-  float m_currentOffset_mV = getAveragedSamplesMv(20) - mid_mV;
+  m_currentOffset_mV = getAveragedSamplesMv(20) - mid_mV;
   ESP_LOGI(TAG, "Load cell offset before calibration: %f mV",
            m_currentOffset_mV);
 
   if (trimRef(m_currentOffset_mV)) {
     m_currentOffset_mV = getAveragedSamplesMv(20) - mid_mV;
-    ESP_LOGI(TAG, "Load cell offset after calibration: %f mV",
+    ESP_LOGI(TAG, "Load cell offset after hardware calibration: %f mV",
              m_currentOffset_mV);
-    // !!! We can make this recursive if needed.
+
+    // mid_mV += m_currentOffset_mV;  // additional software offset
+
+    // m_currentOffset_mV = getAveragedSamplesMv(20) - mid_mV;
+    // ESP_LOGI(TAG, "Load cell offset after software calibration: %f mV",
+    //          m_currentOffset_mV);
+
     m_calibrated = true;
     return true;
   }
+  m_currentOffset_mV = 0.0f;  // reset offset if calibration fails
   return false;
 }
 
@@ -57,7 +64,9 @@ float LoadCell::getSample_mV() {
 }
 
 float LoadCell::getForceSample() {
-  return (getSample_mV() - m_currentOffset_mV - mid_mV);
+  float value = getSample_mV() - m_currentOffset_mV - mid_mV;
+  value = value * 4.464;  // 4.464N/mV
+  return value;
   // !! will need some multiplier here
 }
 

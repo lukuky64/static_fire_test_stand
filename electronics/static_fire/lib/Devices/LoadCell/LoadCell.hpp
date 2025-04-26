@@ -29,10 +29,10 @@ class LoadCell {
 
   float m_currentOffset_mV = 0.0f;
   uint16_t m_currentPotPos = 0;
-  const float m_potVoltageRange = 3300.0f;
+  const float m_potVoltageRange = 2950.0f;
   const float m_potTaps = 129.0f;  // number of taps
 
-  const float mid_mV = 3300.0f / 2.0f;  // midscale
+  float mid_mV = 3300.0f / 2.0f;  // midscale
 
   static constexpr const char *TAG = "LoadCell";
 };
