@@ -27,9 +27,16 @@ class MyGUI:
         self.y_data = []
         self.start_time = None
 
+        self.uplink_rssi = "--"
+        self.downlink_rssi = "--"
+
         self.zero_offset = 0
 
-        self.max_fill = 100 # 100 Newtons by default
+        # self.max_fill = 100 # 100 Newtons by default
+
+        # RSSI Labels
+        self.label_rssi = tk.Label(root, text="Uplink: -- dBm, Downlink: -- dBm", font=("Helvetica", 12))
+        self.label_rssi.grid(row=11, column=2, columnspan=3, sticky='ew')
 
 
         self.button_fire = tk.Button(root, text="FIRE", bg="black", fg="red", font=("Helvetica", 16, "bold"), command=self.open_fire_window)
@@ -210,11 +217,24 @@ class MyGUI:
             self.thread = threading.Thread(target=self.read_from_port)
             self.thread.daemon = True
             self.thread.start()
+
+            self.rssi_request_event = threading.Event()
+            self.rssi_thread = threading.Thread(target=self.send_rssi_command_loop)
+            self.rssi_thread.daemon = True
+            self.rssi_thread.start()
             
 
         except serial.SerialException as e:
             message = f"info: Error connecting to {com_port}: {e}"
             self.label_info.config(text=message)
+
+    def send_rssi_command_loop(self):
+        while self.connectionState and hasattr(self, 'ser') and self.ser.is_open:
+            try:
+                self.ser.write(b"R\n")
+            except serial.SerialException:
+                break
+            time.sleep(2)
 
     def open_fire_window(self):
         # Create a new Toplevel window
@@ -272,6 +292,18 @@ class MyGUI:
         if hasattr(self, 'save_file') and not self.save_file.closed:
             self.save_file.close()
 
+        if hasattr(self, 'rssi_request_event'):
+            self.rssi_request_event.set()
+
+    def update_rssi_label(self, data_dict):
+        if 'UPLINK_RSSI' in data_dict:
+            self.uplink_rssi = data_dict['UPLINK_RSSI']
+        if 'DOWNLINK_RSSI' in data_dict:
+            self.downlink_rssi = data_dict['DOWNLINK_RSSI']
+            
+        self.label_rssi.config(
+            text=f"Uplink: {self.uplink_rssi} dBm, Downlink: {self.downlink_rssi} dBm"
+        )
 
     def read_from_port(self):
         while self.connectionState:
@@ -286,7 +318,6 @@ class MyGUI:
 
                 # Now, parse the incoming line
                 try:
-                    # Example line: "State = IDLE \n Force = 0.00N"
                     pairs = [pair.strip() for pair in line.split('\n') if '=' in pair]
 
                     data_dict = {}
@@ -296,27 +327,31 @@ class MyGUI:
                         value = value.strip()
                         data_dict[key] = value
 
-                    # Now you have a dictionary like: {'State': 'IDLE', 'Force': '0.00N'}
-                    
-                    # Example: process Force if available
+                    # ----- Correct location: after all pairs processed -----
+
+                    # Handle RSSI values (must check entire data_dict, not just last key)
+                    if 'UPLINK_RSSI' in data_dict or 'DOWNLINK_RSSI' in data_dict:
+                        self.update_rssi_label(data_dict)
+
+                    # Process Force if available
                     if 'Force' in data_dict:
                         force_str = data_dict['Force'].replace('N', '')  # Remove unit
                         force_val = float(force_str)
 
                         # Update raw and zeroed force
-                        current_time = time.time() - self.start_time  # elapsed time
-                        self.x_data_raw.append(round(current_time, 2))  # elapsed seconds with 2 dp
+                        current_time = time.time() - self.start_time
+                        self.x_data_raw.append(round(current_time, 2))
                         self.y_data_raw.append(force_val)
 
                         self.x_data = self.x_data_raw
                         self.y_data = [round(y - self.zero_offset, 2) for y in self.y_data_raw]
 
                         self.csv_writer.writerow([self.x_data_raw[-1], self.y_data_raw[-1], self.y_data[-1]])
-                        self.save_file.flush()  # (optional) immediately flush buffer to file
+                        self.save_file.flush()
 
-                        # self.update_label()
+                        self.update_label()
 
-                    # Example: process State if available
+                    # Process State if available
                     if 'State' in data_dict:
                         self.label_info.config(text=f"State: {data_dict['State']}")
 
@@ -331,19 +366,19 @@ class MyGUI:
             self.label_rawData.config(text=latestData)
 
             # remap between 0 and 100
-            latestDataMapped = np.interp(latestData, [0, self.textbox_max_fill.get()], [0, 100])
+            # latestDataMapped = np.interp(latestData, [0, self.textbox_max_fill.get()], [0, 100])
 
-            try:
-                maxVal = float(self.textbox_max_fill.get())
-                if maxVal < 1:
-                    maxVal = 100
-                    self.label_info.config(text="info: Minimum fill value is 1.")
+            # try:
+            #     maxVal = float(self.textbox_max_fill.get())
+            #     if maxVal < 1:
+            #         maxVal = 100
+            #         self.label_info.config(text="info: Minimum fill value is 1.")
 
-            except ValueError:
-                maxVal = 100  # Replace DEFAULT_VALUE with your actual default value
-                self.label_info.config(text="info: Invalid data received in textBox.")
+            # except ValueError:
+            #     maxVal = 100  # Replace DEFAULT_VALUE with your actual default value
+            #     self.label_info.config(text="info: Invalid data received in textBox.")
 
-            self.fill_bar['value'] = int(100*latestDataMapped/maxVal)
+            # self.fill_bar['value'] = int(100*latestDataMapped/maxVal)
             
             if self.plotState:
                 self.update_plot()
