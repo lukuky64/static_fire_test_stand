@@ -65,7 +65,7 @@ float LoadCell::getSample_mV() {
 
 float LoadCell::getForceSample() {
   float value = getSample_mV() - m_currentOffset_mV - mid_mV;
-  value = value * 4.464;  // 4.464N/mV
+  value = value * 9.04;  // 4.464N/mV
   return value;
   // !! will need some multiplier here
 }

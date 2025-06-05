@@ -8,7 +8,7 @@
 LoRaCom::LoRaCom() {}
 
 void LoRaCom::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
-                    uint8_t intPin, float freqMHz) {
+                    uint8_t intPin, float freqMHz, int8_t power) {
   RH_SPI.setPins(MISO, MOSI, CLK);
   rf95 = new RH_RF95(csPin, intPin, RH_SPI);
   INT_PIN = intPin;
@@ -23,7 +23,8 @@ void LoRaCom::begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
   rf95->setFrequency(RF95_FREQ);
   // If using RFM95/96/97/98 modules which uses the PA_BOOST transmitter pin,
   // then you can set transmitter powers from 5 to 20 dBm:
-  rf95->setTxPower(10, false);  // higher = longer range. !!! was 20, but if we
+  rf95->setTxPower(power,
+                   false);      // higher = longer range. !!! was 20, but if we
                                 // can get away with lower then that is better
   rf95->setSpreadingFactor(7);  // 6-12 -> higher = longer range
   // rf95->setSignalBandwidth(7800); // 7.8k to 500k. lower = longer range

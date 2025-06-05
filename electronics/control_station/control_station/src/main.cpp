@@ -18,7 +18,7 @@ unsigned long RSSI_interval = 2000;
 void setup() {
   m_serialCom.init(115200);  // Initialize serial communication
   m_LoRaCom.begin(SPI_CLK_RF, SPI_MISO_RF, SPI_MOSI_RF, SPI_CS_RF, RF_DIO,
-                  915.0f);
+                  915.0f, 20);
 
   delay(1000);
   m_serialCom.sendData("Setup finished");

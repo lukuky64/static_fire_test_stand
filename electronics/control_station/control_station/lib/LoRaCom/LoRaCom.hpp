@@ -12,7 +12,7 @@ class LoRaCom {
  public:
   LoRaCom();
   void begin(uint8_t CLK, uint8_t MISO, int8_t MOSI, uint8_t csPin,
-             uint8_t intPin, float freqMHz);
+             uint8_t intPin, float freqMHz, int8_t power);
   // bool createMessage();
   // void sendMessage();
   void sendMessage(const char *inputmsg);  // overloaded function
